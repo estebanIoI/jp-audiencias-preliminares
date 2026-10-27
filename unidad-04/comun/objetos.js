@@ -142,6 +142,45 @@
       };
       return sombra(56) + '<g class="anima-flota">' + p(22, C.oxido, 50) + p(60, C.teal, 62) + p(98, C.marino, 54) + '</g>';
     },
+    /* Técnicas de investigación de la U3 (segunda pasada, 27/10/2026): equipo informático, envío vigilado, huella y ADN. */
+    computador: function () {
+      return sombra(54) +
+        '<rect x="20" y="26" width="80" height="60" rx="5" fill="' + C.marino + '"/><rect x="26" y="33" width="68" height="47" rx="2" fill="' + C.hielo + '"/>' +
+        '<g class="anima-mensajes"><rect x="32" y="40" width="26" height="7" rx="3.5" fill="' + C.celeste + '"/><rect x="32" y="52" width="34" height="7" rx="3.5" fill="' + C.coral + '"/><rect x="32" y="64" width="20" height="7" rx="3.5" fill="' + C.celeste + '"/></g>' +
+        '<path d="M70 56 H77 L80 59 H88 V73 H70 Z" fill="' + C.oxido + '"/>' +
+        '<rect x="18" y="85" width="84" height="5" rx="2" fill="' + C.marino + '"/>' +
+        '<path d="M8 90 H112 L104 108 Q102 112 97 112 H23 Q18 112 16 108 Z" fill="' + C.teal + '"/><rect x="48" y="97" width="24" height="5" rx="2.5" fill="' + C.niebla + '"/>' +
+        '<g class="anima-parpadeo"><circle cx="60" cy="29.5" r="1.8" fill="' + C.crema + '"/></g>';
+    },
+    paquete: function () {
+      return sombra(50) +
+        '<path d="M16 58 L34 42 H104 L86 58 Z" fill="' + C.amarillo + '"/><path d="M86 58 L104 42 V98 L86 114 Z" fill="' + C.oxido + '"/>' +
+        '<rect x="16" y="58" width="70" height="56" fill="' + C.madera + '"/>' +
+        '<path d="M46 58 L64 42 H74 L56 58 Z" fill="' + C.crema + '"/><rect x="46" y="58" width="10" height="56" fill="' + C.crema + '" opacity=".9"/>' +
+        '<rect x="22" y="74" width="20" height="16" rx="2" fill="' + C.blanco + '"/><rect x="25" y="79" width="14" height="2.5" rx="1" fill="' + C.celeste + '"/><rect x="25" y="84" width="10" height="2.5" rx="1" fill="' + C.celeste + '"/>' +
+        '<g class="anima-flota"><path d="M100 4 a13 13 0 0 1 13 13 c0 10 -13 24 -13 24 s-13 -14 -13 -24 a13 13 0 0 1 13 -13 z" fill="' + C.teal + '"/><circle cx="100" cy="17" r="5" fill="' + C.crema + '"/></g>';
+    },
+    huella: function () {
+      var arcos = ['M36 84 Q34 34 60 32 Q86 34 84 70', 'M44 92 Q40 44 60 42 Q78 44 76 76', 'M52 98 Q46 54 60 52 Q70 54 68 84',
+        'M60 62 Q60 80 62 100', 'M30 66 Q32 44 44 36', 'M84 82 Q86 92 80 100'];
+      return sombra(40) +
+        '<rect x="20" y="12" width="80" height="102" rx="12" fill="' + C.blanco + '" stroke="' + C.niebla + '" stroke-width="3"/>' +
+        '<g class="anima-sello" fill="none" stroke-linecap="round" stroke-width="5">' +
+        arcos.map(function (d, i) { return '<path d="' + d + '" stroke="' + (i === 2 ? C.oxido : C.marino) + '"/>'; }).join('') + '</g>' +
+        '<rect x="34" y="106" width="52" height="4" rx="2" fill="' + C.celeste + '"/>';
+    },
+    adn: function () {
+      var a = '', b = '', peldanos = '';
+      for (var k = 0; k <= 24; k++) {
+        var y = 10 + k * 4, f = Math.sin(k / 24 * Math.PI * 2.5), xa = (60 + 24 * f).toFixed(1), xb = (60 - 24 * f).toFixed(1);
+        a += (k ? ' L' : 'M') + xa + ' ' + y;
+        b += (k ? ' L' : 'M') + xb + ' ' + y;
+        if (k % 3 === 1) peldanos += '<path d="M' + xa + ' ' + y + ' H' + xb + '" stroke="' + (k % 2 ? C.celeste : C.crema) + '" stroke-width="5" stroke-linecap="round"/>';
+      }
+      return sombra(32) + '<g class="anima-flota">' + peldanos +
+        '<path d="' + a + '" fill="none" stroke="' + C.teal + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="' + b + '" fill="none" stroke="' + C.oxido + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>';
+    },
     planta: function () {
       return '<path d="M46 116 L50 92 H70 L74 116 Z" fill="' + C.oxido + '"/>' +
         '<g class="anima-planta" fill="' + C.teal + '"><path d="M60 92 Q40 66 46 40 Q62 64 60 92 Z"/><path d="M60 92 Q78 70 82 46 Q66 66 60 92 Z"/><path d="M60 92 Q58 60 62 30 Q70 62 60 92 Z" fill="#4A7F77"/></g>';

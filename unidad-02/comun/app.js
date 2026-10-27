@@ -116,10 +116,17 @@
   }
   var IMAGEN = datos.scenes.map(function (e) { return conFigura(e) ? tema(e) : null; });
   IMAGEN.forEach(function (t, i) { if (t && i && IMAGEN[i - 1] === t) IMAGEN[i] = null; });
-  function figura(objs) {
+  function figura(objs, acomp) {
     var t = IMAGEN[actual];
     if (t) return '<figure class="ctx-arte foto" aria-hidden="true"><img src="' + BASE + 'assets/contexto/' + t + '.webp" alt=""></figure>';
     var C = O.C, n = Math.min(objs.length, 3), xs = [[150], [98, 206], [66, 150, 236]][n - 1], s = [1.85, 1.25, 0.95][n - 1];
+    /* Lámina de un solo punto (segunda pasada de U3–U4): su objeto al centro y, detrás, dos objetos tomados de su mismo texto. */
+    if (objs.length === 1 && acomp && acomp.length) {
+      return '<figure class="ctx-arte" aria-hidden="true"><svg viewBox="0 0 300 260"><circle cx="150" cy="128" r="112" fill="' + C.hielo + '"/>' +
+        '<ellipse cx="150" cy="238" rx="128" ry="12" fill="' + C.piso + '"/>' +
+        acomp.slice(0, 2).map(function (o, j) { return O.dibujar(o, j ? 234 : 66, 226, 0.8, 'entra e' + (j + 1)); }).join('') +
+        O.dibujar(objs[0], 150, 238, 1.5, 'entra e0') + '</svg></figure>';
+    }
     return '<figure class="ctx-arte" aria-hidden="true"><svg viewBox="0 0 300 260"><circle cx="150" cy="128" r="112" fill="' + C.hielo + '"/>' +
       '<ellipse cx="150" cy="238" rx="128" ry="12" fill="' + C.piso + '"/>' + O.dibujar('planta', 24, 238, 0.62, 'deco') +
       objs.slice(0, 3).map(function (o, j) { return O.dibujar(o, xs[j], 238, s, 'entra e' + j); }).join('') + '</svg></figure>';
@@ -652,14 +659,14 @@
       if (t.length > 110) lista.push({ id: 'bt' + k, label: b.rotulo || primerasPalabras(t), texto: t, obj: 'documento' }); else cabeza = t;
     }
     var orden = b.tipo === 'mapa' ? b.items.filter(function (x) { return x.centro; }).concat(b.items.filter(function (x) { return !x.centro; })) : b.items;
-    orden.forEach(function (it, i) { lista.push({ id: k + '-' + i, label: it.label, texto: segs(it.segs), obj: it.obj }); });
+    orden.forEach(function (it, i) { lista.push({ id: k + '-' + i, label: it.label, texto: segs(it.segs), obj: it.obj, acomp: it.acomp }); });
     var n = lista.length;
     var html = '<div class="contexto n' + n + '">' + (cabeza ? '<p class="bloque-titulo">' + esc(may(cabeza)) + '</p>' : '') +
       (n > 1 ? '<div class="ctx-puntos" role="tablist">' + lista.map(function (it, i) {
         return '<button type="button" role="tab" class="ctx-punto' + refc(it.label) + '" data-id="' + it.id + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's">' +
           '<span class="ctx-n">' + (i + 1) + '</span><span class="ctx-ico">' + svgObjeto(it.obj, 28) + '</span><span class="ctx-rotulo">' + rot(it.label) + '</span><span class="ctx-visto">' + visto + '</span></button>';
       }).join('') + '</div>' : '') +
-      '<article class="ctx-texto" tabindex="-1" aria-live="polite"></article>' + figura(lista.map(function (x) { return x.obj; })) + '</div>';
+      '<article class="ctx-texto" tabindex="-1" aria-live="polite"></article>' + figura(lista.map(function (x) { return x.obj; }), n === 1 ? lista[0].acomp : null) + '</div>';
     return { html: html, lista: lista };
   }
   function activarContexto(el, lista) {
