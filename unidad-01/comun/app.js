@@ -30,10 +30,23 @@
     empareja: 'Elige un nombre y tócalo sobre su descripción.',
     caso: 'Lee el caso, consulta la pista y responde.'
   };
+  /* Juan (26/10/2026): mayúscula inicial en rótulos y títulos; artículos, leyes, sentencias y la Corte se ven y titilan. */
+  function may(s) { return String(s).replace(/\p{L}/u, function (c) { return c.toUpperCase(); }); }
+  var REF = /(?:\b[Aa]rt(?:ículos?|\.)\s*\d+[A-Za-z]?(?:\s(?:del|de la)\s(?:CPP|CN|Constitución Política|Ley\s\d+(?:\sde\s\d{4})?))?|\bLey\s\d+(?:\sde\s\d{4})?|\b(?:Sentencias?\s)?(?:C|T|SU)-\d+(?:\/\d+|\sde\s\d{4})?|Corte Constitucional|Constitución Política|Directiva\s\d+\sde\s\d{4})/g;
+  function esRef(s) { REF.lastIndex = 0; var r = REF.test(String(s)); REF.lastIndex = 0; return r; }
+  function refc(s) { return esRef(s) ? ' ref' : ''; }
+  function rot(s) { return (esRef(s) ? '<i class="fas fa-book-open ref-ico" aria-hidden="true"></i>' : '') + esc(may(s)); }
+  function rico(s) { return esc(s).replace(REF, function (m) { return '<mark class="ref-texto">' + m + '</mark>'; }); }
   function seg(i) { return escena.segmentos[i]; }
   function segs(a) { return (a || []).map(seg).join(' '); }
   function svgObjeto(nombre, ancho) {
     return '<svg class="obj-svg" viewBox="-6 -6 132 132" width="' + (ancho || 100) + '" aria-hidden="true">' + O.dibujar(nombre, 60, 120, 1) + '</svg>';
+  }
+  /* Si el texto no cabe junto a la ilustración, la ilustración se achica o se oculta: nunca desplazamiento. */
+  function ajustarLectura(caja) {
+    caja.classList.remove('apretada', 'sin-arte');
+    if (caja.scrollHeight > caja.clientHeight + 1) caja.classList.add('apretada');
+    if (caja.scrollHeight > caja.clientHeight + 1) caja.classList.add('sin-arte');
   }
   function reanimar(el) { el.classList.remove('aparece'); void el.offsetWidth; el.classList.add('aparece'); }
 
@@ -65,16 +78,17 @@
     av.appendChild(c);
     setTimeout(function () { c.remove(); }, 1700);
     raiz.querySelectorAll('.tras-completar').forEach(function (e) { e.hidden = false; reanimar(e); });
+    raiz.querySelectorAll('.ruta-lectura').forEach(ajustarLectura);
   }
 
   /* ---------- Lector superpuesto común ---------- */
   function leer(titulo, texto, obj, desde) {
     var l = raiz.querySelector('.lector');
     retornoFoco = desde || null;
-    l.innerHTML = '<div class="lector-caja" role="dialog" aria-modal="true" aria-label="' + esc(titulo) + '" tabindex="-1">' +
+    l.innerHTML = '<div class="lector-caja" role="dialog" aria-modal="true" aria-label="' + esc(may(titulo)) + '" tabindex="-1">' +
       '<button type="button" class="cerrar" aria-label="Cerrar lectura">Cerrar ×</button>' +
       (obj ? '<span class="lector-arte">' + svgObjeto(obj, 78) + '</span>' : '') +
-      '<p class="lectura-eyebrow">' + esc(titulo) + '</p><p class="lectura-texto">' + esc(texto) + '</p></div>';
+      '<p class="lectura-eyebrow">' + esc(may(titulo)) + '</p><p class="lectura-texto">' + rico(texto) + '</p></div>';
     l.hidden = false;
     reanimar(l.firstChild);
     l.querySelector('.cerrar').onclick = cerrarLector;
@@ -92,12 +106,13 @@
   function tituloBloque(b, k) {
     if (!b.titulo || !b.titulo.length) return '';
     var t = segs(b.titulo);
-    if (t.length <= 110) return '<p class="bloque-titulo">' + esc(t) + '</p>';
-    return fichaIntro('bt' + k, 'Introducción del bloque', t, 'documento');
+    if (t.length <= 110) return '<p class="bloque-titulo">' + esc(may(t)) + '</p>';
+    return fichaIntro('bt' + k, b.rotulo || primerasPalabras(t), t, 'documento');
   }
+  function primerasPalabras(t) { var w = t.split(/\s+/); return w.length > 6 ? w.slice(0, 6).join(' ') + '…' : t; }
   function fichaIntro(id, rotulo, texto, obj) {
-    return '<button type="button" class="intro" data-id="' + id + '" data-rotulo="' + esc(rotulo) + '" data-obj="' + obj + '" data-texto="' + esc(texto) + '">' +
-      '<span class="intro-arte">' + svgObjeto(obj, 34) + '</span><span class="intro-rotulo">' + esc(rotulo) + '</span>' +
+    return '<button type="button" class="intro' + refc(rotulo) + '" data-id="' + id + '" data-rotulo="' + esc(rotulo) + '" data-obj="' + obj + '" data-texto="' + esc(texto) + '">' +
+      '<span class="intro-arte">' + svgObjeto(obj, 34) + '</span><span class="intro-rotulo">' + rot(rotulo) + '</span>' +
       '<span class="intro-toca">' + mano + ' Toca para leer</span><span class="intro-visto">' + visto + '</span></button>';
   }
 
@@ -116,8 +131,8 @@
       boton('nucleo', centro, k, 0, 'left:50%;top:52%') + nodos + '</div>';
   };
   function boton(clase, item, k, i, estilo) {
-    return '<button type="button" class="nodo ' + clase + '" data-id="' + k + '-' + i + '" data-b="' + k + '" data-i="' + i + '" style="' + estilo + '">' +
-      '<span class="nodo-arte">' + svgObjeto(item.obj, clase === 'nucleo' ? 70 : 48) + '</span><span class="nodo-rotulo">' + esc(item.label) + '</span>' +
+    return '<button type="button" class="nodo ' + clase + refc(item.label) + '" data-id="' + k + '-' + i + '" data-b="' + k + '" data-i="' + i + '" style="' + estilo + '">' +
+      '<span class="nodo-arte">' + svgObjeto(item.obj, clase === 'nucleo' ? 70 : 48) + '</span><span class="nodo-rotulo">' + rot(item.label) + '</span>' +
       '<span class="nodo-marca">' + mano + visto + '</span></button>';
   }
   B.mapa.activar = function (b, k, el) {
@@ -142,8 +157,8 @@
       O.dibujar('planta', 34, LBASE + 8, 0.7, 'deco') + O.dibujar('planta', 690, LBASE + 8, 0.56, 'deco') +
       b.items.map(function (it, i) { return O.dibujar(it.obj, xs[i], LBASE, s, 'entra e' + i); }).join('') + '</svg>';
     return '<div class="lamina">' + svg + b.items.map(function (it, i) {
-      return '<button type="button" class="punto" data-id="' + k + '-' + i + '" data-i="' + i + '" data-x="' + xs[i] + '" data-y="' + Math.round(LBASE - 120 * s) + '">' +
-        '<span class="punto-n">' + (i + 1) + '</span><span class="punto-rotulo">' + esc(it.label) + '</span>' + mano + '<span class="punto-visto">' + visto + '</span></button>';
+      return '<button type="button" class="punto' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" data-x="' + xs[i] + '" data-y="' + Math.round(LBASE - 120 * s) + '">' +
+        '<span class="punto-n">' + (i + 1) + '</span><span class="punto-rotulo">' + rot(it.label) + '</span>' + mano + '<span class="punto-visto">' + visto + '</span></button>';
     }).join('') + '</div>';
   };
   function posicionarPuntos() {
@@ -175,10 +190,10 @@
   B.giro = function (b, k) {
     return tituloBloque(b, k) +
       '<div class="giros n' + b.items.length + (b.compacto ? ' compacto' : '') + '">' + b.items.map(function (it, i) {
-        return '<button type="button" class="giro" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="giro-int">' +
-          '<span class="cara frente"><span class="giro-n">' + (i + 1) + '</span><span class="giro-arte">' + svgObjeto(it.obj, b.compacto ? 44 : 70) + '</span>' +
-          '<span class="giro-rotulo">' + esc(it.label) + '</span><span class="giro-toca">' + mano + ' Toca para girar</span></span>' +
-          '<span class="cara dorso"><span class="giro-rotulo">' + esc(it.label) + '</span><span class="giro-leido">' + visto + ' Leído · toca para releer</span></span>' +
+        return '<button type="button" class="giro' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="giro-int">' +
+          '<span class="cara frente"><span class="giro-n">' + (i + 1) + '</span><span class="giro-arte">' + svgObjeto(it.obj, b.compacto ? 44 : 96) + '</span>' +
+          '<span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-toca">' + mano + ' Toca para girar</span></span>' +
+          '<span class="cara dorso"><span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-leido">' + visto + ' Leído · toca para releer</span></span>' +
           '</span></button>';
       }).join('') + '</div>';
   };
@@ -194,7 +209,7 @@
 
   B.fichas = function (b, k) {
     return '<div class="fichas" role="tablist">' + b.items.map(function (it, i) {
-      return '<button type="button" role="tab" class="ficha" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' + esc(it.label) + '<span class="ficha-visto">' + visto + '</span></button>';
+      return '<button type="button" role="tab" class="ficha' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' + rot(it.label) + '<span class="ficha-visto">' + visto + '</span></button>';
     }).join('') + '</div><div class="panel-fichas" role="tabpanel" tabindex="-1"><span class="panel-arte"></span><div class="panel-texto"><p class="panel-vacio">' + mano + ' Elige una ficha para leer su contenido.</p></div></div>';
   };
   B.fichas.activar = function (b, k, el) {
@@ -204,7 +219,7 @@
         var i = Number(f.dataset.i), it = b.items[i];
         el.querySelectorAll('.ficha').forEach(function (o) { o.setAttribute('aria-selected', String(o === f)); });
         panel.querySelector('.panel-arte').innerHTML = svgObjeto(it.obj, 92);
-        panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(it.label) + '</p><p class="lectura-texto">' + esc(segs(it.segs)) + '</p>';
+        panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
         reanimar(panel); marcar(f.dataset.id);
       });
     });
@@ -213,9 +228,9 @@
 
   function pasos(b, k, clase) {
     return '<div class="' + clase + ' p' + b.items.length + '"><span class="camino" aria-hidden="true"><b></b><i class="ficha-avance"></i></span>' + b.items.map(function (it, i) {
-      return '<button type="button" class="paso" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.09) + 's"' + (clase === 'linea' && i > 0 ? ' disabled' : '') + '>' +
+      return '<button type="button" class="paso' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.09) + 's"' + (clase === 'linea' && i > 0 ? ' disabled' : '') + '>' +
         '<span class="paso-arte">' + svgObjeto(it.obj, 56) + '</span><span class="paso-n">' + (i + 1) + '</span>' +
-        '<span class="paso-rotulo">' + esc(it.label) + '</span><span class="paso-visto">' + visto + '</span></button>';
+        '<span class="paso-rotulo">' + rot(it.label) + '</span><span class="paso-visto">' + visto + '</span></button>';
     }).join('') + '</div>';
   }
   B.ruta = function (b, k) {
@@ -230,7 +245,9 @@
       var pct = n === 1 ? 50 : 100 * i / (n - 1);
       ficha.style.left = pct + '%'; traza.style.width = pct + '%';
       var it = b.items[i];
-      caja.innerHTML = '<span class="ruta-arte">' + svgObjeto(it.obj, 64) + '</span><div><p class="lectura-eyebrow">' + (linea ? 'Momento ' : 'Paso ') + (i + 1) + ' de ' + n + ' · ' + esc(it.label) + '</p><p class="lectura-texto">' + esc(segs(it.segs)) + '</p></div>';
+      caja.innerHTML = '<div class="ruta-texto"><p class="lectura-eyebrow">' + (linea ? 'Momento ' : 'Paso ') + (i + 1) + ' de ' + n + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p></div>' +
+        '<span class="ruta-arte">' + svgObjeto(it.obj, 150) + '</span>';
+      ajustarLectura(caja);
       reanimar(caja);
       sig.disabled = i >= n - 1;
       marcar(k + '-' + i);
@@ -252,11 +269,11 @@
       '<g class="viga" style="transform:rotate(-14deg)"><rect x="40" y="42" width="280" height="10" rx="5" fill="' + C.teal + '"/>' +
       '<path d="M62 52 L38 120 M62 52 L86 120 M298 52 L274 120 M298 52 L322 120" stroke="' + C.marino + '" stroke-width="2.5"/>' +
       '<path d="M28 120 H96 Q92 146 62 146 Q32 146 28 120 Z" fill="' + C.oxido + '"/><path d="M264 120 H332 Q328 146 298 146 Q268 146 264 120 Z" fill="' + C.oxido + '"/>' +
-      '<rect x="40" y="100" width="44" height="22" rx="4" fill="' + C.marino + '"/><text x="62" y="115" text-anchor="middle" font-family="Montserrat,Arial" font-weight="800" font-size="9" fill="#fff">reserva</text>' +
+      '<rect x="40" y="100" width="44" height="22" rx="4" fill="' + C.marino + '"/><text x="62" y="115" text-anchor="middle" font-family="Montserrat,Arial" font-weight="800" font-size="9" fill="#fff">Reserva</text>' +
       '<g class="platillo"></g></g><circle cx="180" cy="44" r="13" fill="' + C.crema + '" stroke="' + C.marino + '" stroke-width="4"/></svg>';
     return '<div class="balanza-zona"><div class="pesas">' + tituloBloque(b, k) +
       b.items.map(function (it, i) {
-        return '<button type="button" class="pesa" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="pesa-n">' + (i + 1) + '</span>' + esc(it.label) + mano + '<span class="pesa-visto">' + visto + '</span></button>';
+        return '<button type="button" class="pesa" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="pesa-n">' + (i + 1) + '</span>' + esc(may(it.label)) + mano + '<span class="pesa-visto">' + visto + '</span></button>';
       }).join('') + '</div><div class="balanza-centro">' + escala + '<ol class="criterios" aria-live="polite"></ol></div></div>';
   };
   B.balanza.activar = function (b, k, el) {
@@ -268,7 +285,7 @@
         p.classList.add('puesta'); puestos++;
         viga.style.transform = 'rotate(' + (-14 + 14 * puestos / n) + 'deg)';
         plat.insertAdjacentHTML('beforeend', '<rect class="pesa-svg" x="' + (270 + (puestos - 1) % 2 * 30) + '" y="' + (100 - Math.floor((puestos - 1) / 2) * 16) + '" width="26" height="16" rx="4" fill="' + O.C.marino + '"/>');
-        lista.insertAdjacentHTML('beforeend', '<li class="aparece">' + esc(segs(it.segs)) + '</li>');
+        lista.insertAdjacentHTML('beforeend', '<li class="aparece">' + rico(segs(it.segs)) + '</li>');
         marcar(p.dataset.id);
         if (puestos === n) el.querySelector('.balanza-centro').classList.add('equilibrio');
       });
@@ -285,7 +302,7 @@
     return tituloBloque(b, k) +
       '<div class="empareja' + (amplio ? ' amplio' : '') + '"><div class="nombres" role="group" aria-label="Nombres para arrastrar">' +
       '<p class="nombres-guia"><i class="fas fa-hand-pointer" aria-hidden="true"></i> Arrastra o toca</p>' + orden.map(function (i) {
-        return '<button type="button" class="nombre" data-i="' + i + '" aria-pressed="false"><span class="agarre" aria-hidden="true">⋮⋮</span>' + esc(b.items[i].label) + '</button>';
+        return '<button type="button" class="nombre" data-i="' + i + '" aria-pressed="false"><span class="agarre" aria-hidden="true">⋮⋮</span>' + esc(may(b.items[i].label)) + '</button>';
       }).join('') + '</div><div class="defs n' + b.items.length + '">' + b.items.map(function (it, i) {
         var t = segs(it.segs), lim = amplio ? 230 : 100, corto = t.length > lim + 5 ? t.slice(0, lim).replace(/\s+\S*$/, '') + '…' : t;
         return '<button type="button" class="def" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="def-arte">' + svgObjeto(it.obj, amplio ? 64 : 36) + '</span>' +
@@ -303,10 +320,10 @@
       var i = Number(d.dataset.i), it = b.items[i];
       if (Number(n.dataset.i) === i) {
         d.classList.add('acierto'); n.disabled = true; n.classList.add('usado'); n.setAttribute('aria-pressed', 'false');
-        d.querySelector('.def-ranura').innerHTML = visto + ' ' + esc(it.label);
+        d.querySelector('.def-ranura').innerHTML = visto + ' ' + esc(may(it.label));
         elegido = null;
         if (b.amplio) {
-          d.querySelector('.def-texto').innerHTML = '<b>' + esc(encabezado(it)) + '</b>' + esc(segs(it.segs));
+          d.querySelector('.def-texto').innerHTML = '<b>' + esc(encabezado(it)) + '</b>' + rico(segs(it.segs));
           d.classList.add('completa'); enfocar(d); reanimar(d);
           aviso.textContent = '¡Correcto! La descripción completa quedó en la tarjeta.';
         } else {
@@ -397,15 +414,15 @@
     var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span>' + guias[escena.layout] + '</span></p>' +
       (total ? '<div class="avance" role="status"><span class="avance-rotulo">Exploración</span><span class="barra"><i></i></span><output>0 / ' + total + '</output></div>' : '') + '</header>';
     var cuerpo = '';
-    if (escena.titulo.length) cuerpo += '<p class="escena-titulo">' + esc(segs(escena.titulo)) + '</p>';
+    if (escena.titulo.length) cuerpo += '<p class="escena-titulo">' + esc(may(segs(escena.titulo))) + '</p>';
     if (escena.lead.length) {
-      var primero = seg(escena.lead[0]), rot = primero.length <= 70 ? primero : 'Idea central de la escena';
+      var primero = seg(escena.lead[0]), rotLead = escena.rotulo || (primero.length <= 70 ? primero : primerasPalabras(primero));
       var objLead = (escena.bloques[0].items && escena.bloques[0].items[0] && escena.bloques[0].items[0].obj) || 'documento';
-      cuerpo += fichaIntro('lead', rot, segs(escena.lead), objLead);
+      cuerpo += fichaIntro('lead', rotLead, segs(escena.lead), objLead);
     }
     cuerpo += escena.bloques.map(function (b, k) { return '<div class="bloque bloque-' + b.tipo + (b.compacto ? ' es-compacto' : '') + '" data-k="' + k + '">' + B[b.tipo](b, k) + '</div>'; }).join('');
     if (escena.chips.length) cuerpo += '<ul class="chips' + (escena.layout === 'lamina' && !escena.tail.length ? '' : '') + '">' + escena.chips.map(function (c, i) {
-      return '<li style="--d:' + (0.4 + i * 0.1) + 's"><i class="fas fa-circle-check" aria-hidden="true"></i>' + esc(c) + '</li>';
+      return '<li style="--d:' + (0.4 + i * 0.1) + 's"><i class="fas fa-circle-check" aria-hidden="true"></i>' + esc(may(c)) + '</li>';
     }).join('') + '</ul>';
     if (escena.tail.length) cuerpo += '<p class="caja-clave tras-completar" hidden><span class="clave-rotulo"><i class="fas fa-star" aria-hidden="true"></i> Idea clave desbloqueada</span>' + esc(segs(escena.tail)) + '</p>';
     raiz.className = 'ova layout-' + escena.layout + (embebido ? ' embebido' : '');
