@@ -143,18 +143,26 @@
     var av = raiz.querySelector('.avance');
     av.classList.add('completo');
     av.querySelector('output').innerHTML = visto + ' Exploración completa';
-    var c = document.createElement('div');
-    c.className = 'confeti'; c.setAttribute('aria-hidden', 'true');
-    for (var k = 0; k < 22; k++) {
-      var p = document.createElement('i');
-      p.style.setProperty('--x', (Math.random() * 260 - 130) + 'px');
-      p.style.setProperty('--y', (-30 - Math.random() * 90) + 'px');
-      p.style.setProperty('--r', (Math.random() * 540) + 'deg');
-      p.style.animationDelay = (Math.random() * 0.15) + 's';
-      c.appendChild(p);
+    /* El confeti va en su propia capa, por encima de toda la escena (antes nacía dentro del encabezado y la escena lo
+       tapaba): sale del distintivo «Exploración completa», salta y cae sobre la escena. Sin animación si el usuario la reduce. */
+    if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      var caja = raiz.getBoundingClientRect(), insignia = av.querySelector('output').getBoundingClientRect();
+      var c = document.createElement('div');
+      c.className = 'confeti'; c.setAttribute('aria-hidden', 'true');
+      c.style.left = (insignia.left + insignia.width / 2 - caja.left) + 'px';
+      c.style.top = (insignia.top + insignia.height / 2 - caja.top) + 'px';
+      for (var k = 0; k < 48; k++) {
+        var p = document.createElement('i');
+        p.style.setProperty('--x', (-Math.random() * caja.width * 0.75 + 60) + 'px');
+        p.style.setProperty('--s', (20 + Math.random() * 60) + 'px');
+        p.style.setProperty('--y', (caja.height * (0.35 + Math.random() * 0.6)) + 'px');
+        p.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg');
+        p.style.setProperty('--t', (Math.random() * 0.25) + 's');
+        c.appendChild(p);
+      }
+      raiz.appendChild(c);
+      setTimeout(function () { c.remove(); }, 2400);
     }
-    av.appendChild(c);
-    setTimeout(function () { c.remove(); }, 1700);
     raiz.querySelectorAll('.tras-completar').forEach(function (e) { e.hidden = false; reanimar(e); });
     raiz.querySelectorAll('.ruta-lectura').forEach(crecerLectura);
   }
