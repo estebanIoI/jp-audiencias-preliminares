@@ -409,3 +409,78 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 @keyframes titila{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(1.15)}}
 @media (prefers-reduced-motion:reduce){.ref:not(.visto) .ref-ico{animation:none}}
 .ruta-lectura.apretada .ruta-arte{width:104px}.ruta-lectura.apretada .ruta-arte .obj-svg{width:90px}.ruta-lectura.sin-arte .ruta-arte{display:none}
+/* Unidades 2–4: párrafos, viñetas, notas al pie y tablas de la fuente */
+.parr{display:block}.parr+.parr{margin-top:.5em}
+.parr.vineta{padding-left:1.05em;text-indent:-1.05em;margin-top:.25em}
+.nota-pie{margin-top:.7em!important;padding-top:.45em;border-top:1px dashed var(--niebla);font-size:12.6px;line-height:1.42;color:#4b5557}
+.nota-pie sup,.llamada{font:800 10px Montserrat,Arial,sans-serif;color:var(--oxido);margin-left:1px}
+.panel-tabla{display:block}
+.panel-tabla .panel-texto{width:100%}
+.tabla-filas{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.tabla-filas li{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;padding:7px 10px;border-radius:10px;background:#ffffff1f;animation:aparece .4s ease both}
+.tabla-celda{display:flex;flex-direction:column;gap:2px}
+.tabla-enc{font:800 10.5px/1.25 Montserrat,Arial,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:var(--crema)}
+.panel-tabla .lectura-texto{color:var(--blanco);font-size:13.6px;line-height:1.42}
+.tabla-pestanas .ficha{max-width:100%}
+@media (max-width:520px){.tabla-filas li{grid-auto-flow:row}}
+.ruta-lectura.mini .lectura-texto{font-size:13px;line-height:1.38}.ruta-lectura.mini{padding:9px 13px}
+.tabla-pestanas{gap:5px}.tabla-pestanas .ficha{font-size:12px;padding:4px 11px 4px 4px}
+.tabla-filas.compacta{grid-template-columns:1fr 1fr;gap:4px 6px}.tabla-filas.compacta li{padding:4px 8px}
+.tabla-filas.compacta .lectura-texto{font-size:12.4px;line-height:1.3}
+@media (max-width:520px){.tabla-filas.compacta{grid-template-columns:1fr}}
+
+/* ---------- Aprovechar el espacio (Juan, R8): texto a un lado e imagen de contexto al otro (27/10/2026) ---------- */
+.contexto{flex:1;min-height:0;display:grid;gap:0 16px;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);grid-template-rows:auto auto minmax(0,1fr);
+  grid-template-areas:"cab cab" "pun pun" "txt arte"}
+.contexto>.bloque-titulo{grid-area:cab;margin-bottom:6px}.contexto>.ctx-texto{grid-area:txt}.contexto>.ctx-arte{grid-area:arte}
+.contexto.sin-arte{grid-template-columns:1fr;grid-template-areas:"cab" "pun" "txt"}.contexto.sin-arte .ctx-arte{display:none}
+.ctx-puntos{grid-area:pun;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.ctx-punto{position:relative;flex:1 1 0;min-width:0;display:flex;align-items:center;gap:7px;padding:5px 12px 5px 5px;border:2px solid var(--marino);border-radius:14px;
+  background:var(--blanco);color:var(--marino);font:800 12px/1.2 Montserrat,Arial,sans-serif;text-align:left;animation:subir .45s ease both;animation-delay:var(--d);transition:background .2s,color .2s}
+.contexto.n5 .ctx-punto,.contexto.n6 .ctx-punto{flex-basis:calc(33% - 6px)}
+.ctx-n{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:var(--crema);color:var(--marino);font-size:11.5px}
+.ctx-ico{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--hielo)}
+.ctx-rotulo{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.ctx-punto:not(.visto)::after{content:"";position:absolute;inset:-4px;border:2px solid var(--oxido);border-radius:16px;animation:latido 2s ease-out infinite;pointer-events:none}
+.ctx-punto[aria-selected=true]{background:var(--marino);color:var(--blanco)}.ctx-punto[aria-selected=true] .ctx-ico{background:var(--blanco)}
+.ctx-visto{display:none;position:absolute;right:-7px;top:-8px;width:20px;height:20px;border-radius:50%;background:var(--teal);color:var(--blanco);font-size:11px;place-items:center;border:2px solid var(--blanco)}
+.ctx-punto.visto .ctx-visto{display:grid}
+.ctx-texto{--fs:16px;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:safe center;padding:16px 20px;border-radius:16px;
+  background:var(--blanco);border-left:6px solid var(--oxido);box-shadow:0 8px 20px #003f5e1f}
+.ctx-icono{flex:none;display:grid;place-items:center;width:108px;height:108px;margin-bottom:12px;border-radius:50%;background:var(--hielo);animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
+.ctx-texto.sin-icono .ctx-icono{display:none}
+.ctx-texto .lectura-eyebrow{font-size:max(11.5px,calc(var(--fs) * .74));margin-bottom:7px}
+.ctx-texto .lectura-texto{font-size:var(--fs);line-height:1.5}
+.ctx-arte{position:relative;min-width:0;min-height:0;margin:0;display:flex;align-items:flex-end;justify-content:center;border-radius:18px;overflow:hidden;
+  background:radial-gradient(ellipse 62% 56% at 50% 55%,var(--hielo) 0 99%,transparent 100%)}
+.ctx-arte img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 10px 8px #003f5e1c);animation:aparece .6s ease both}
+.ctx-arte svg{width:100%;height:100%}
+.ctx-arte:not(.foto){background:none}
+/* Fichas con poco texto: la imagen ocupa el lado derecho del panel y el texto crece hasta llenarlo. */
+.panel-fichas.con-figura{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:stretch;overflow:hidden}
+.panel-fichas.con-figura .panel-texto{--fs:15px;order:-1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:safe center}
+.panel-fichas.con-figura .panel-texto .lectura-texto{font-size:var(--fs)}.panel-fichas.con-figura .panel-texto .lectura-eyebrow{font-size:max(11.5px,calc(var(--fs) * .74))}
+.panel-fichas.con-figura .panel-arte{width:auto;display:grid;place-items:center;background:#ffffff1a;border-radius:16px}
+.panel-fichas.con-figura .panel-arte svg{width:min(100%,190px);height:auto}
+.panel-fichas.con-figura .ctx-arte{background:radial-gradient(ellipse 60% 55% at 50% 55%,var(--hielo) 0 99%,transparent 100%);border-radius:16px}
+.panel-fichas.con-figura.sin-arte{grid-template-columns:1fr}.panel-fichas.con-figura.sin-arte>.panel-arte,.panel-fichas.con-figura.sin-arte>.ctx-arte{display:none}
+/* Emparejar con dos descripciones: la imagen de contexto acompaña a la derecha. */
+.empareja.amplio.con-figura{grid-template-columns:minmax(0,1fr) minmax(0,.5fr);grid-template-rows:auto minmax(0,1fr)}
+.empareja.amplio.con-figura>.nombres{grid-column:1}.empareja.amplio.con-figura>.defs{grid-column:1;grid-row:2}
+.empareja.amplio.con-figura>.ctx-arte{grid-column:2;grid-row:1/span 2}
+@media (max-width:600px){
+  .contexto{grid-template-areas:"cab" "pun" "txt"}
+  .contexto,.panel-fichas.con-figura,.empareja.amplio.con-figura{grid-template-columns:1fr}
+  .contexto .ctx-arte,.panel-fichas.con-figura>.ctx-arte,.panel-fichas.con-figura>.panel-arte,.empareja.amplio.con-figura>.ctx-arte{display:none}
+  .contexto{min-height:300px}.ctx-texto{overflow:visible}
+}
+/* Tarjetas que giran (3 o más): el comienzo literal del texto llena la cara; se recorta si no cabe. */
+.giro-extracto{flex:0 1 auto;min-height:0;max-width:100%;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;padding:0 4px;
+  font:400 12.2px/1.42 Roboto,Arial,sans-serif;color:#3d4547}
+.giros.n5 .giro-extracto,.giros.n6 .giro-extracto{-webkit-line-clamp:5;font-size:11.6px}
+.frente .giro-arte{flex:0 1 auto;min-height:0}.frente .giro-toca{flex:none}
+.cara{overflow:hidden}
+/* Ruta e historia con texto breve: la letra crece (--fs) para llenar la caja de lectura. */
+.ruta-lectura .ruta-texto .lectura-texto{font-size:var(--fs,14.2px)}
+.ruta-lectura .ruta-texto .lectura-eyebrow{font-size:max(11.5px,calc(var(--fs,14.2px) * .78))}
+.ruta-lectura.mini .ruta-texto .lectura-texto{font-size:13px}
