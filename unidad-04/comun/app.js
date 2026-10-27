@@ -30,7 +30,7 @@
     linea: 'Avanza por la historia del caso.',
     balanza: 'Coloca cada criterio en la balanza.',
     empareja: 'Elige un nombre y tócalo sobre su descripción.',
-    caso: 'Lee el caso, consulta la pista y responde.',
+    caso: 'Resuelve el caso del expediente paso a paso.',
     tabla: 'Elige cada pestaña para recorrer la tabla.'
   };
   /* Juan (26/10/2026): mayúscula inicial en rótulos y títulos; artículos, leyes, sentencias y la Corte se ven y titilan. */
@@ -65,12 +65,12 @@
   /* Texto breve en la ruta o la historia: crece hasta 18 px; si no cabe, ajustarLectura achica ilustración y letra. */
   /* ¿Cabe el contenido de la caja con un margen? Se suma la altura real de los hijos (scrollHeight nunca baja de clientHeight). */
   function cabe(caja, margen) {
-    var cs = getComputedStyle(caja), libre = caja.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (margen || 0), alto = 0;
+    var cs = getComputedStyle(caja), libre = caja.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (margen || 0), alto = 0, n = 0;
     for (var c = caja.firstElementChild; c; c = c.nextElementSibling) {
       var m = getComputedStyle(c);
-      if (m.display !== 'none') alto += c.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom);
+      if (m.display !== 'none') { alto += c.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom); n++; }
     }
-    return alto <= libre;
+    return alto + Math.max(0, n - 1) * (parseFloat(cs.rowGap) || 0) <= libre;
   }
   function crecerLectura(caja) {
     var texto = caja.querySelector('.ruta-texto');
@@ -85,6 +85,7 @@
      la misma en dos escenas seguidas; sin tema reconocible se dibujan en grande los objetos de la escena. */
   var BASE = ((document.currentScript && document.currentScript.src) || '').replace(/app\.js(\?.*)?$/, '') || '../comun/';
   var CONTEXTO = [
+    ['fundamento', /enfoques? de g[eé]nero|interseccional|lideresa/i],
     ['investigacion', /investigaci|interceptaci|allanamiento|vigilancia|encubiert|entregas? vigiladas?|b[uú]squeda selectiva|bases? de datos|evidencia|elementos? materia|polic[ií]a judicial|seguimiento/i],
     ['terminos', /vencimiento de t[eé]rminos|\bplazos?\b|caducidad|preclusi/i],
     ['captura', /captur|aprehen|detenci|detenid|privaci[oó]n de (la )?libertad|medidas? de aseguramiento|flagrancia|indiciad/i],
@@ -92,10 +93,10 @@
     ['sustentacion', /sustent|argument|teor[ií]a del caso|motivos fundados|inferencia|controversia|probatori|alegat/i],
     ['fundamento', /fundament|constituci|marco normativo|legal|jurisprudenc|sentencia|corte|principio|garant|finalidad|\bley\b/i]
   ];
+  function temaDeTexto(t) { for (var i = 0; i < CONTEXTO.length; i++) if (CONTEXTO[i][1].test(t)) return CONTEXTO[i][0]; return null; }
   function tema(e) {
     var propio = [e.titulo_genially || '', e.rotulo || ''].concat(e.bloques.reduce(function (a, b) { return a.concat((b.items || []).map(function (x) { return x.label; })); }, [])).join(' ');
-    function probar(t) { for (var i = 0; i < CONTEXTO.length; i++) if (CONTEXTO[i][1].test(t)) return CONTEXTO[i][0]; return null; }
-    return probar(propio) || probar((e.seccion || '') + ' ' + datos.heading);
+    return temaDeTexto(propio) || temaDeTexto((e.seccion || '') + ' ' + datos.heading);
   }
   /* Escena con poco contenido: un solo bloque de lámina o giro con 1–2 elementos, mapa con hasta 3 ramas o balanza (U1). */
   function escasa(e) {
@@ -520,45 +521,116 @@
     el.querySelector('.ficha').click();
   };
 
-  /* Caso del curso con roles fijos (U1) o con sus párrafos en orden (U2–U4): el último es la consigna. */
-  B.caso = function (b) {
-    if (b.roles.parrafos) return casoParrafos(b);
-    var r = b.roles, C = O.C;
-    var arte = '<svg class="caso-arte" viewBox="0 0 300 200" aria-hidden="true"><rect x="10" y="142" width="280" height="14" rx="6" fill="' + C.madera + '"/>' +
-      '<rect x="26" y="156" width="12" height="42" fill="' + C.madera + '"/><rect x="262" y="156" width="12" height="42" fill="' + C.madera + '"/>' +
-      O.dibujar('expediente', 100, 142, 0.95, 'entra e0') + O.dibujar(b.obj === 'expediente' ? 'documento' : b.obj, 212, 142, 0.82, 'entra e1') + O.dibujar('planta', 272, 142, 0.4, 'deco') + '</svg>';
-    return '<div class="caso"><div class="caso-izq">' + arte + '<p class="caja-clave">' + esc(seg(r.nota)) + '</p></div><div class="caso-der">' +
-      '<article class="caso-ficha"><p class="lectura-eyebrow"><i class="fas fa-folder-open" aria-hidden="true"></i> ' + esc(seg(r.titulo)) + '</p>' +
-      (r.hecho !== undefined ? '<p class="caso-hecho">' + esc(seg(r.hecho)) + '</p>' : '') +
-      '<p class="caso-pregunta">' + esc(seg(r.pregunta)) + '</p>' +
-      (r.pista !== undefined ? '<button type="button" class="pista" aria-expanded="false">' + mano + ' Ver pista para responder</button><p class="pista-texto" hidden>' + esc(seg(r.pista)) + '</p>' : '') +
-      '</article><label class="caso-respuesta"><span>' + esc(seg(r.instruccion)) + '</span><textarea rows="3"></textarea></label>' +
-      '<p class="caso-cuenta"><output>0</output> / 500 palabras</p></div></div>';
-  };
-  function casoParrafos(b) {
-    var r = b.roles, C = O.C, ps = r.parrafos, ultimo = ps[ps.length - 1];
-    var arte = '<svg class="caso-arte" viewBox="0 0 300 200" aria-hidden="true"><rect x="10" y="142" width="280" height="14" rx="6" fill="' + C.madera + '"/>' +
-      '<rect x="26" y="156" width="12" height="42" fill="' + C.madera + '"/><rect x="262" y="156" width="12" height="42" fill="' + C.madera + '"/>' +
-      O.dibujar('expediente', 100, 142, 0.95, 'entra e0') + O.dibujar(b.obj || 'documento', 212, 142, 0.82, 'entra e1') + O.dibujar('planta', 272, 142, 0.4, 'deco') + '</svg>';
-    return '<div class="caso"><div class="caso-izq">' + arte + '</div><div class="caso-der">' +
-      '<article class="caso-ficha"><p class="lectura-eyebrow"><i class="fas fa-folder-open" aria-hidden="true"></i> ' + esc(may(typeof r.titulo === 'number' ? seg(r.titulo) : r.titulo)) + '</p>' +
-      ps.slice(0, -1).map(function (i) { return '<p class="caso-hecho">' + rico(seg(i)) + '</p>'; }).join('') +
-      '<p class="caso-pregunta">' + rico(seg(ultimo)) + '</p></article>' +
-      '<label class="caso-respuesta"><span>' + mano + ' Tu respuesta</span><textarea rows="3"></textarea></label>' +
-      '<p class="caso-cuenta"><output>0</output> / 500 palabras</p></div></div>';
+  /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
+     «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
+     posición y Anterior/Siguiente. Todo el texto de la fuente aparece en su orden: la situación, las preguntas y consignas,
+     la pista, la instrucción de respuesta y la nota. Admite los roles fijos de U1 y los párrafos de U2–U4. */
+  var ENCABEZADO = /^(Aplicación al expediente del curso)\s*/;
+  var TAREA = /¿|\b(analice|determine|clasifique|explique|identifique|examine|deberá encontrar|establezca|indique|describa)\b/i;
+  function oraciones(t) { return String(t).split(/(?<=[.?!])\s+(?=[¿¡A-ZÁÉÍÓÚÑ])/).filter(function (x) { return x.trim(); }); }
+  function modeloCaso(b) {
+    var r = b.roles, m = { encabezado: 'Aplicación al expediente del curso', situacion: [], tareas: [], pista: [], instruccion: [], nota: [] };
+    function clasificar(t, porRol) {
+      if (/^Responda\b/.test(t)) m.instruccion.push(t);
+      else if (/^Adicionalmente\b/.test(t)) m.nota.push(t);
+      else if (/^Para ello\b/.test(t)) m.pista.push(t);
+      else if (porRol === 'tarea' || TAREA.test(t)) m.tareas.push(t);
+      else m.situacion.push(t);
+    }
+    var titulo = typeof r.titulo === 'number' ? seg(r.titulo) : (r.titulo || ''), resto = titulo.replace(ENCABEZADO, '');
+    if (ENCABEZADO.test(titulo)) m.encabezado = ENCABEZADO.exec(titulo)[1];
+    if (r.parrafos) {
+      if (resto) clasificar(resto);
+      r.parrafos.forEach(function (i) { oraciones(seg(i)).forEach(function (o) { clasificar(o); }); });
+    } else {
+      if (resto) m.situacion.push(resto);
+      if (r.hecho !== undefined) m.situacion.push(seg(r.hecho));
+      if (r.pregunta !== undefined) m.tareas.push(seg(r.pregunta));
+      if (r.pista !== undefined) m.tareas.push(seg(r.pista));
+      if (r.instruccion !== undefined) m.instruccion.push(seg(r.instruccion));
+      if (r.nota !== undefined) m.nota.push(seg(r.nota));
+    }
+    /* Una situación que no cierra la frase («En la indagación acerca del caso de …,») se lee junto a la primera tarea. */
+    var sit = m.situacion.join(' ');
+    if (sit && /[,:;]$/.test(sit.trim()) && m.tareas.length) { m.tareas[0] = sit + ' ' + m.tareas[0]; m.situacion = []; }
+    var nombre = /caso de ((?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s?){2,4})/.exec(m.situacion.concat(m.tareas).join(' '));
+    m.nombre = nombre ? 'Caso de ' + nombre[1].trim() : 'Expediente del curso';
+    m.situacion = m.situacion.reduce(function (a, x) { if (a.length && /,$/.test(a[a.length - 1].trim())) a[a.length - 1] += ' ' + x; else a.push(x); return a; }, []);
+    /* Caso y tarea breves comparten página («El caso y su tarea»); si no, cada uno tiene la suya. */
+    m.junto = m.situacion.length > 0 && (m.situacion.join(' ') + m.tareas.join(' ') + m.pista.join(' ')).length <= 460;
+    m.paginas = m.junto ? ['caso', 'respuesta'] : (m.situacion.length ? ['caso'] : []).concat(['tarea', 'respuesta']);
+    return m;
   }
+  function totalCaso(b) { var m = modeloCaso(b); return m.paginas.length + m.tareas.length; }
+  B.caso = function (b, k) {
+    /* La imagen del caso sale del texto del propio caso; si no hay tema, del de la escena y la lección. */
+    var m = modeloCaso(b), tm = temaDeTexto(m.situacion.concat(m.tareas).join(' ')) || tema(escena) || 'fundamento';
+    var arte = '<figure class="ctx-arte foto caso-figura" aria-hidden="true"><img src="' + BASE + 'assets/contexto/' + tm + '.webp" alt=""></figure>';
+    var ficha = '<p class="caso-eyebrow"><i class="fas fa-folder-open" aria-hidden="true"></i> ' + esc(m.encabezado) + '</p><p class="caso-nombre">' + esc(m.nombre) + '</p>';
+    var nombres = { caso: m.junto ? 'El caso y su tarea' : 'El caso', tarea: 'Su tarea', respuesta: 'Su respuesta' };
+    /* Cada pregunta o consigna es una tarjeta que se marca como revisada; la pista de la fuente va resaltada debajo. */
+    function tareasHtml() {
+      return m.tareas.map(function (t, i) {
+        return '<button type="button" class="caso-tarea" data-id="' + k + '-t' + i + '" aria-pressed="false"><span class="caso-n">' + (i + 1) + '</span><span class="lectura-texto">' + rico(t) + '</span>' +
+          '<span class="caso-marca">' + mano + ' Lo tendré en cuenta</span><span class="caso-visto">' + visto + ' Revisado</span></button>';
+      }).join('') + m.pista.map(function (t) { return '<p class="caso-pista"><i class="fas fa-lightbulb" aria-hidden="true"></i><span class="lectura-texto">' + rico(t) + '</span></p>'; }).join('');
+    }
+    var pag = {
+      caso: '<div class="caso-hoja">' + ficha + '<div class="caso-situacion caso-encaja">' + m.situacion.map(function (t) { return '<p class="lectura-texto">' + rico(t) + '</p>'; }).join('') +
+        (m.junto ? tareasHtml() : '') + '</div></div>' + arte,
+      tarea: '<div class="caso-hoja">' + ficha + '<div class="caso-tareas caso-encaja">' + tareasHtml() + '</div></div>' +
+        (m.situacion.length ? '<figure class="caso-figura caso-objeto" aria-hidden="true">' + svgObjeto(b.obj && b.obj !== 'expediente' ? b.obj : 'documento', 170) + '</figure>' : arte),
+      respuesta: '<div class="caso-escribir">' + m.instruccion.map(function (t) { return '<p class="caso-instruccion">' + rico(t) + '</p>'; }).join('') +
+        '<label class="caso-respuesta"><span class="sr-only">Su respuesta</span><textarea placeholder="Escriba aquí su respuesta…"></textarea></label>' +
+        '<div class="caso-pie"><span class="caso-cuenta"><output>0</output> / 500 palabras</span><span class="caso-barra"><i></i></span>' +
+        '<button type="button" class="caso-copiar"><i class="fas fa-copy" aria-hidden="true"></i> Copiar respuesta</button></div></div>' +
+        '<aside class="caso-recuerde"><p class="caso-eyebrow"><i class="fas fa-list-check" aria-hidden="true"></i> Su tarea</p><ol>' +
+        m.tareas.map(function (t) { return '<li>' + rico(t) + '</li>'; }).join('') + '</ol>' +
+        m.nota.map(function (t) { return '<p class="caja-clave">' + rico(t) + '</p>'; }).join('') + '</aside>'
+    };
+    return '<div class="caso2" data-paginas="' + m.paginas.length + '">' + m.paginas.map(function (p, i) {
+      return '<section class="caso-pagina pag-' + p + (i ? '' : ' activa') + '" data-p="' + i + '" aria-label="' + nombres[p] + '"' + (i ? ' hidden' : '') + '>' + pag[p] + '</section>';
+    }).join('') +
+      '<nav class="caso-nav" aria-label="Páginas del caso"><button type="button" class="caso-ant"><i class="fas fa-arrow-left" aria-hidden="true"></i> Anterior</button>' +
+      '<span class="caso-puntos">' + m.paginas.map(function (p, i) { return '<button type="button" class="caso-punto" data-ir="' + i + '" aria-label="' + nombres[p] + '"><span>' + nombres[p] + '</span></button>'; }).join('') + '</span>' +
+      '<button type="button" class="caso-sig">Siguiente <i class="fas fa-arrow-right" aria-hidden="true"></i></button></nav></div>';
+  };
   B.caso.activar = function (b, k, el) {
-    var t = el.querySelector('textarea'), out = el.querySelector('.caso-cuenta output'), clave = 'ap-respuesta-' + (datos.unit || 1) + '-' + datos.lesson + '-' + actual;
-    var p = el.querySelector('.pista');
-    if (p) p.addEventListener('click', function () { var x = el.querySelector('.pista-texto'); x.hidden = !x.hidden; p.setAttribute('aria-expanded', String(!x.hidden)); if (!x.hidden) reanimar(x); });
+    var paginas = el.querySelectorAll('.caso-pagina'), puntos = el.querySelectorAll('.caso-punto'), ant = el.querySelector('.caso-ant'), sig = el.querySelector('.caso-sig'), pos = 0;
+    function ir(i) {
+      pos = i;
+      paginas.forEach(function (p, j) { p.hidden = j !== i; p.classList.toggle('activa', j === i); });
+      puntos.forEach(function (p, j) { p.setAttribute('aria-current', j === i ? 'step' : 'false'); p.classList.toggle('pasado', j < i); });
+      ant.disabled = i === 0; sig.disabled = i === paginas.length - 1;
+      var pg = paginas[i]; reanimar(pg); marcar(k + '-p' + i);
+      pg.querySelectorAll('.caso-encaja').forEach(function (c) { encajarTexto(pg, c); });
+    }
+    puntos.forEach(function (p) { p.addEventListener('click', function () { ir(Number(p.dataset.ir)); }); });
+    ant.addEventListener('click', function () { ir(Math.max(0, pos - 1)); });
+    sig.addEventListener('click', function () { ir(Math.min(paginas.length - 1, pos + 1)); });
+    el.querySelectorAll('.caso-tarea').forEach(function (t) {
+      t.addEventListener('click', function () { t.setAttribute('aria-pressed', 'true'); t.classList.add('visto'); marcar(t.dataset.id); });
+    });
+    var t = el.querySelector('textarea'), out = el.querySelector('.caso-cuenta output'), barra = el.querySelector('.caso-barra i'), clave = 'ap-respuesta-' + (datos.unit || 1) + '-' + datos.lesson + '-' + actual;
     try { t.value = localStorage.getItem(clave) || ''; } catch (e) { /* sin almacenamiento */ }
     function contar() {
       var palabras = t.value.trim() ? t.value.trim().split(/\s+/) : [];
       if (palabras.length > 500) { t.value = palabras.slice(0, 500).join(' '); palabras.length = 500; }
-      out.textContent = palabras.length;
+      out.textContent = palabras.length; barra.style.width = (palabras.length / 5) + '%';
       try { localStorage.setItem(clave, t.value); } catch (e) { /* sin almacenamiento */ }
     }
     t.addEventListener('input', contar); contar();
+    var copiar = el.querySelector('.caso-copiar');
+    copiar.addEventListener('click', function () {
+      function listo() { copiar.innerHTML = visto + ' Respuesta copiada'; setTimeout(function () { copiar.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i> Copiar respuesta'; }, 1800); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(listo, function () { t.select(); try { document.execCommand('copy'); listo(); } catch (e) { /* sin portapapeles */ } });
+      else { t.select(); try { document.execCommand('copy'); listo(); } catch (e) { /* sin portapapeles */ } }
+    });
+    ir(0);
+    /* Las tipografías llegan después: se vuelve a encajar el texto de la página visible. */
+    function reencajar() { var pg = paginas[pos]; pg.querySelectorAll('.caso-encaja').forEach(function (c) { encajarTexto(pg, c); }); }
+    if (document.fonts) document.fonts.ready.then(reencajar);
+    window.addEventListener('resize', reencajar);
   };
 
   /* Escena escasa: los puntos (si hay más de uno) arriba, su texto completo a la vista y la imagen de contexto al lado.
@@ -603,7 +675,7 @@
   /* ---------- Escena ---------- */
   function render() {
     escena = datos.scenes[actual]; vistos = {}; retornoFoco = null;
-    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? 0 : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
+    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
     var ctx = escasa(escena) ? contexto(0) : null;
     var guia = ctx ? (ctx.lista.length > 1 ? 'Elige cada punto y lee su contenido junto a la ilustración.' : 'Lee el contenido junto a la ilustración.') : guias[escena.layout === 'balanza' ? 'fichas' : escena.layout];
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
