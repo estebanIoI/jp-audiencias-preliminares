@@ -1,45 +1,40 @@
-/* Bienes en el proceso penal · colores de la plantilla de Genially del curso
-   Esteban (27/10/2026): «No olvides usar la paleta de colores de los cursos», con la captura de las plantillas
-   «C3 - UNI 1 - LEC 1 - BIENES EN EL PROCESO PENAL». Colores leídos del editor de Juan:
-     verde oscuro #24635B (franja superior)   menta #8AC4B8           azul petróleo #07415C (títulos, botones)
-     naranja #FF6936 (números, acentos)       celeste #E2F3F5 (paneles) grises #ECEFF1 y #D9D6D6   texto #121212
-   Se carga después de base.css (lo enlaza producir_bienes.py) y solo cambia colores: la composición es la del motor.
-   Contraste: el naranja va en bordes, barras y círculos con número oscuro; nunca en letra pequeña ni bajo texto blanco. */
+/* Bienes en el proceso penal · colores de la portada de la plantilla de Genially del curso
+   Esteban (27/10/2026): «recuerda que debes seguir la paleta de colores que tiene la primera página», con la captura de la
+   portada «Bienes en el proceso penal». Colores de esa página, leídos del editor de Juan:
+     verde oscuro #24635B (franja superior)   menta #8AC4B8 (panel y «proceso penal»)   celeste #E3F2F5 (fondo)
+     azul petróleo #07415C («Bienes en el», «Curso», «Comenzar»: rótulos y botones con texto blanco)   blanco
+   Sin el naranja ni los grises de las otras páginas. Se carga después de base.css (lo enlaza producir_bienes.py) y solo
+   cambia colores: la composición es la del motor. */
 :root{
-  --teal:#24635B;--marino:#07415C;--oxido:#FF6936;--coral:#8AC4B8;--crema:#8AC4B8;--niebla:#ECEFF1;
-  --hielo:#E2F3F5;--fondo:#FFFFFF;--piso:#E2F3F5;--tinta:#121212;--clave-fondo:#E2F3F5;--clave-borde:#FF6936
+  --teal:#24635B;--marino:#07415C;--oxido:#07415C;--coral:#8AC4B8;--crema:#8AC4B8;--niebla:#E3F2F5;
+  --hielo:#E3F2F5;--fondo:#FFFFFF;--piso:#E3F2F5;--tinta:#07415C;--clave-fondo:#E3F2F5;--clave-borde:#24635B
 }
-:focus-visible{outline-color:var(--marino)}
 .ova{border-color:#8AC4B8;box-shadow:0 6px 18px #24635B1f}
 
-/* Letra pequeña que en el motor va en óxido: en petróleo (el naranja sobre blanco no llega a 3:1). */
-.lectura-eyebrow,.nodo-marca,.def-ranura,.empareja-aviso,.caso-eyebrow,.nota-pie sup,.llamada,.pesa .fa-hand-pointer{color:var(--marino)}
-/* Números sobre naranja, con texto oscuro. */
-.col-n,.giro-n,.caso-n,.punto.visto .punto-n,.paso.visto .paso-n,.paso.pasado .paso-n{color:var(--tinta)}
 /* Sobre los paneles verde oscuro, los rótulos claros van en celeste. */
 .panel .lectura-eyebrow,.panel-texto .lectura-eyebrow,.tabla-enc,.panel .panel-vacio i,.panel-fichas .panel-vacio i,.chips li i{color:var(--hielo)}
 
-/* Tarjetas y columnas: tintes de la plantilla en lugar de rosa, amarillo y azul. */
+/* Tarjetas y columnas: tintes de la portada (celeste, menta, petróleo claro y blanco). */
 .giro:nth-child(4n+2) .frente{background:#8AC4B833;border-color:#8AC4B8;box-shadow:0 5px 0 #8AC4B8}
-.giro:nth-child(4n+3) .frente{background:#ECEFF1;border-color:#D9D6D6;box-shadow:0 5px 0 #D9D6D6}
-.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#8AC4B8;box-shadow:0 5px 0 #8AC4B8}
+.giro:nth-child(4n+3) .frente{background:#07415C12;border-color:#07415C55;box-shadow:0 5px 0 #07415C55}
+.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#24635B66;box-shadow:0 5px 0 #24635B66}
 .columna.tono1{background:#8AC4B833;border-color:#8AC4B8;box-shadow:0 6px 0 #8AC4B8}
-.columna.tono2{background:#ECEFF1;border-color:#D9D6D6;box-shadow:0 6px 0 #D9D6D6}
-.columna.tono3{background:#FFFFFF;border-color:#8AC4B8;box-shadow:0 6px 0 #8AC4B8}
+.columna.tono2{background:#07415C12;border-color:#07415C55;box-shadow:0 6px 0 #07415C55}
+.columna.tono3{background:#FFFFFF;border-color:#24635B66;box-shadow:0 6px 0 #24635B66}
 
 /* Fondos de lámina y mapa, caminos y líneas. */
-.lamina{background:linear-gradient(180deg,#E2F3F5 0%,#FFFFFF 75%)}
-.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FFFFFF 40%,#E2F3F5 78%)}
+.lamina{background:linear-gradient(180deg,#E3F2F5 0%,#FFFFFF 75%)}
+.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FFFFFF 40%,#E3F2F5 78%)}
 .camino,.linea .camino{border-top-color:#8AC4B8}
 .mapa-lineas line{stroke:#8AC4B8}
 
 /* Emparejar, notas, casos y referencias. */
 .def{border-color:#8AC4B8}
-.def.acierto,.caso-tarea.visto{background:#E2F3F5}
-.def.sobre{background:#FF69361a}
-.empareja.amplio .def-ranura{border-color:#FF6936;background:#FFFFFF}
+.def.acierto,.caso-tarea.visto{background:#E3F2F5}
+.def.sobre{background:#07415C14}
+.empareja.amplio .def-ranura{border-color:#8AC4B8;background:#FFFFFF}
 .nota-pie{color:var(--tinta)}
-mark.ref-texto{background:#E2F3F5;box-shadow:inset 0 -2px 0 var(--oxido)}
-.confeti i:nth-child(5n+1){background:var(--oxido)}
-@keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #FF693600}50%{box-shadow:0 0 0 6px #FF693633}}
+mark.ref-texto{background:#E3F2F5;box-shadow:inset 0 -2px 0 #8AC4B8}
+.confeti i:nth-child(5n+1){background:#E3F2F5}
+@keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #07415C00}50%{box-shadow:0 0 0 6px #07415C33}}
 @keyframes brillo{0%{box-shadow:0 0 0 0 #24635B66}100%{box-shadow:0 0 0 12px #24635B00}}
