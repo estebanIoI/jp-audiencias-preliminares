@@ -426,6 +426,14 @@
         elegido = null;
         if (b.amplio) {
           d.querySelector('.def-texto').innerHTML = '<b>' + esc(encabezado(it)) + '</b>' + rico(segs(it.segs));
+          /* Esteban (27/10/2026): la tarjeta que se expande lleva debajo del texto una imagen acorde, de fondo suave, en el
+             espacio que sobra (si el texto es largo, se achica o desaparece). La imagen de contexto de la escena, o el objeto
+             del elemento en grande si la escena ya muestra su imagen al lado o no tiene tema. */
+          if (!d.querySelector('.def-ilus')) {
+            var tm = conFigura(escena) ? null : (IMAGEN[actual] || tema(escena));
+            d.querySelector('.def-ranura').insertAdjacentHTML('beforebegin', '<span class="def-ilus" aria-hidden="true">' +
+              (tm ? '<img src="' + BASE + 'assets/contexto/' + tm + '.webp" alt="">' : svgObjeto(it.obj, 170)) + '</span>');
+          }
           d.classList.add('completa'); enfocar(d); reanimar(d);
           aviso.textContent = '¡Correcto! La descripción completa quedó en la tarjeta.';
         } else {
@@ -471,7 +479,11 @@
       var defs = el.querySelector('.defs'), n = b.items.length, i = Number(d.dataset.i);
       el.querySelectorAll('.def').forEach(function (o) { o.classList.toggle('foco', o === d); });
       defs.style.gridTemplateColumns = b.items.map(function (_, j) { return j === i ? (n === 2 ? '1.7fr' : '2.7fr') : '1fr'; }).join(' ');
+      setTimeout(recortes, 520); /* tras la transición de las columnas */
     }
+    /* Una tarjeta angosta cuyo texto no cabe lo desvanece al pie en vez de cortarlo bajo el borde; se lee completo al enfocarla. */
+    function recortes() { el.querySelectorAll('.def-texto').forEach(function (t) { t.classList.toggle('recortado', t.scrollHeight > t.clientHeight + 1); }); }
+    if (b.amplio) { setTimeout(recortes, 120); window.addEventListener('resize', recortes); }
     el.querySelectorAll('.def').forEach(function (d) {
       d.addEventListener('click', function () {
         var it = b.items[Number(d.dataset.i)];
