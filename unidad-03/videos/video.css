@@ -1,0 +1,34 @@
+/* Reproductor de casos en video · identidad visual aprobada de Audiencias preliminares (paleta de JP, Montserrat y Roboto).
+   Iframe de Genially 767 × 510: el video 16:9 y los dos botones caben sin desplazamiento. */
+@font-face{font-family:Montserrat;src:url('../comun/assets/fonts/montserrat-latin.woff2') format('woff2');font-weight:400 800;font-display:swap}
+@font-face{font-family:Roboto;src:url('../comun/assets/fonts/roboto-latin.woff2') format('woff2');font-weight:400 700;font-display:swap}
+:root{--marino:#003F5E;--teal:#30615B;--oxido:#AD4D32;--crema:#F2F3B8;--hielo:#E5F2F3;--niebla:#D7E4E6;--tinta:#353A3C;--blanco:#fff;--fondo:#F5FBF9}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--fondo);color:var(--tinta);font:400 14px/1.45 Roboto,Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--oxido);outline-offset:2px}
+.video-ova{height:100dvh;min-height:360px;display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px}
+.video-cab{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.video-titulo{font:800 15px/1.25 Montserrat,Arial,sans-serif;color:var(--marino)}
+.video-estado{flex:none;padding:3px 10px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 11px Montserrat,Arial,sans-serif}
+.video-marco{position:relative;flex:1;min-height:0;display:grid;place-items:center;border-radius:14px;background:var(--marino);overflow:hidden;box-shadow:0 8px 20px #003f5e33}
+.video-marco video{width:100%;height:100%;object-fit:contain;background:#00263a}
+.video-marco video::cue{font:500 17px/1.35 Roboto,Arial,sans-serif;background:#000000b3;color:#fff}
+.video-pendiente{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;color:var(--blanco)}
+.video-pendiente[hidden]{display:none}
+.video-pendiente i{font-size:44px;color:var(--crema)}
+.pendiente-titulo{font:800 17px/1.3 Montserrat,Arial,sans-serif}
+.pendiente-detalle{max-width:560px;font-size:12.5px;opacity:.85;overflow-wrap:anywhere}
+.video-opciones{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.video-version{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:2px solid var(--marino);border-radius:99px;background:var(--blanco);color:var(--marino);font:800 12.5px Montserrat,Arial,sans-serif}
+.video-version[aria-pressed=true]{background:var(--marino);color:var(--blanco)}
+.video-version i{color:var(--oxido)}.video-version[aria-pressed=true] i{color:var(--crema)}
+.video-cc{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 11px Montserrat,Arial,sans-serif;color:var(--teal)}
+.modo-lista .video-cab{padding-bottom:4px;border-bottom:2px solid var(--niebla)}
+.video-lista{display:flex;flex-direction:column;gap:8px;overflow:auto}
+.video-item{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:var(--blanco);color:var(--tinta);text-decoration:none;box-shadow:0 4px 12px #003f5e14}
+.item-id{font:800 12px Montserrat,Arial,sans-serif;color:var(--marino)}
+.item-estado{padding:3px 10px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 11px Montserrat,Arial,sans-serif}
+.item-estado.e-entregado{background:var(--teal);color:var(--blanco)}
+@media (max-width:600px){.video-cc{margin-left:0}.video-item{grid-template-columns:1fr}}

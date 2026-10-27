@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video del caso · Unidad 3</title>
+<link rel="stylesheet" href="../comun/assets/vendor/fontawesome.min.css">
+<link rel="stylesheet" href="../comun/assets/vendor/solid.min.css">
+<link rel="stylesheet" href="video.css?v=83ab7f5a">
+</head>
+<body>
+<!-- Reproductor de los casos que JP integra como video (reunión con Juan, 27/10/2026).
+     index.html?video=ID muestra un solo video para el iframe de Genially (767 × 510); sin ?video, la lista para revisión.
+     Las rutas de los medios son relativas a esta carpeta (medios/…) para que viajen dentro del paquete SCORM. -->
+<main class="video-ova" data-video>
+  <header class="video-cab">
+    <p class="video-titulo"></p>
+    <span class="video-estado" hidden></span>
+  </header>
+  <div class="video-marco">
+    <video controls preload="metadata" playsinline>
+      <source type="video/mp4">
+      <track kind="subtitles" srclang="es" label="Español" default>
+    </video>
+    <div class="video-pendiente" hidden>
+      <i class="fas fa-film" aria-hidden="true"></i>
+      <p class="pendiente-titulo">Video pendiente de entrega</p>
+      <p class="pendiente-detalle"></p>
+    </div>
+  </div>
+  <div class="video-opciones" role="group" aria-label="Versión del video">
+    <button type="button" class="video-version" data-version="normal" aria-pressed="true"><i class="fas fa-play" aria-hidden="true"></i> Versión normal</button>
+    <button type="button" class="video-version" data-version="senas" aria-pressed="false"><i class="fas fa-hands-asl-interpreting" aria-hidden="true"></i> Con interpretación en lengua de señas</button>
+    <span class="video-cc"><i class="fas fa-closed-captioning" aria-hidden="true"></i> Subtítulos en español</span>
+  </div>
+  <nav class="video-lista" aria-label="Videos de la unidad" hidden></nav>
+</main>
+<script type="application/json" id="videos">[
+ {
+  "id": "u3-l1-e11",
+  "unidad": 3,
+  "leccion": 1,
+  "escena": 11,
+  "ubicacion": "Lección 1 · Aplicación al expediente del curso (caso de Beatriz Elena Morales)",
+  "titulo": null,
+  "estado": "pendiente_confirmacion",
+  "normal": {
+   "src": "medios/u3-l1-e11.mp4",
+   "subtitulos": "medios/u3-l1-e11.es.vtt"
+  },
+  "senas": {
+   "src": "medios/u3-l1-e11-lsc.mp4",
+   "subtitulos": "medios/u3-l1-e11-lsc.es.vtt"
+  }
+ },
+ {
+  "id": "u3-l2-e86",
+  "unidad": 3,
+  "leccion": 2,
+  "escena": 86,
+  "ubicacion": "Lección 2 · Aplicación al expediente del curso (caso de Beatriz Elena Morales)",
+  "titulo": null,
+  "estado": "pendiente_confirmacion",
+  "normal": {
+   "src": "medios/u3-l2-e86.mp4",
+   "subtitulos": "medios/u3-l2-e86.es.vtt"
+  },
+  "senas": {
+   "src": "medios/u3-l2-e86-lsc.mp4",
+   "subtitulos": "medios/u3-l2-e86-lsc.es.vtt"
+  }
+ }
+]</script>
+<script src="video.js?v=83ab7f5a"></script>
+</body>
+</html>

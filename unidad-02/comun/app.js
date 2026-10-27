@@ -33,15 +33,21 @@
     caso: 'Resuelve el caso del expediente paso a paso.',
     tabla: 'Elige cada pestaña para recorrer la tabla.'
   };
-  /* Juan (26/10/2026): mayúscula inicial en rótulos y títulos; artículos, leyes, sentencias y la Corte se ven y titilan. */
-  function may(s) { return String(s).replace(/\p{L}/u, function (c) { return c.toUpperCase(); }); }
+  /* Juan (26–27/10/2026): mayúscula inicial en rótulos, títulos y en todo bloque de texto (párrafo, viñeta, celda, extracto);
+     artículos, leyes, sentencias y la Corte se ven y titilan. Solo cambia la letra con que arranca el bloque: si empieza
+     con un número no se toca, y la marca de una enumeración («(ii)», «a)», «b.», «1.») se conserva. */
+  function may(s) {
+    s = String(s);
+    var p = /^[\s•«"“'(¿¡*\-–—]*(?:(?:[ivx]{1,5}|[a-j]|\d{1,2})[.)]\s+)?/.exec(s)[0];
+    return p + s.slice(p.length).replace(/^\p{Ll}/u, function (c) { return c.toUpperCase(); });
+  }
   var REF = /(?:\b[Aa]rt(?:ículos?|\.)\s*\d+[A-Za-z]?(?:\s(?:del|de la)\s(?:CPP|CN|Constitución Política|Ley\s\d+(?:\sde\s\d{4})?))?|\bLey\s\d+(?:\s?(?:de\s|\/)\d{4})?|\b(?:Sentencias?\s)?(?:C|T|SU)-\d+(?:\/\d+|\sde\s\d{4})?|\b(?:STP|STC|AP|SP|STS)\s?\d+[-\/]\d{4}|Corte Constitucional|Corte Suprema de Justicia|Constitución Política|Resolución\s[\d‐-]+\sde\s\d{4}|Directiva\s\d+(?:\sde\s\d{4})?)/g;
   function esRef(s) { REF.lastIndex = 0; var r = REF.test(String(s)); REF.lastIndex = 0; return r; }
   function refc(s) { return esRef(s) ? ' ref' : ''; }
   function rot(s) { return (esRef(s) ? '<i class="fas fa-book-open ref-ico" aria-hidden="true"></i>' : '') + esc(may(s)); }
   /* Cada línea es un párrafo de la fuente; «[^n] …» al inicio es una nota al pie y «[^n]» en el texto, su llamada. */
   function linea(t) {
-    var nota = /^\[\^(\d+)\]\s*/.exec(t), cuerpo = nota ? t.slice(nota[0].length) : t;
+    var nota = /^\[\^(\d+)\]\s*/.exec(t), cuerpo = may(nota ? t.slice(nota[0].length) : t);
     var h = esc(cuerpo).replace(REF, function (m) { return '<mark class="ref-texto">' + m + '</mark>'; })
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\[\^(\d+)\]/g, '<sup class="llamada">$1</sup>');
     if (nota) return '<span class="parr nota-pie"><sup>' + nota[1] + '</sup> ' + h + '</span>';
@@ -284,7 +290,7 @@
       '<div class="giros n' + b.items.length + (b.compacto ? ' compacto' : '') + '">' + b.items.map(function (it, i) {
         return '<button type="button" class="giro' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="giro-int">' +
           '<span class="cara frente"><span class="giro-n">' + (i + 1) + '</span><span class="giro-arte">' + svgObjeto(it.obj, b.compacto ? 44 : 96) + '</span>' +
-          '<span class="giro-rotulo">' + rot(it.label) + '</span>' + (b.compacto ? '' : '<span class="giro-extracto">' + esc(extracto(segs(it.segs), 150)) + '</span>') +
+          '<span class="giro-rotulo">' + rot(it.label) + '</span>' + (b.compacto ? '' : '<span class="giro-extracto">' + esc(may(extracto(segs(it.segs), 150))) + '</span>') +
           '<span class="giro-toca">' + mano + ' Toca para girar</span></span>' +
           '<span class="cara dorso"><span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-leido">' + visto + ' Leído · toca para releer</span></span>' +
           '</span></button>';
@@ -414,7 +420,7 @@
   };
   B.empareja.activar = function (b, k, el) {
     var elegido = null, aviso = el.querySelector('.empareja-aviso');
-    function encabezado(it) { return typeof it.nombre === 'number' ? seg(it.nombre) + ' ' : ''; }
+    function encabezado(it) { return typeof it.nombre === 'number' ? may(seg(it.nombre)) + ' ' : ''; }
     function elegir(n) {
       el.querySelectorAll('.nombre').forEach(function (o) { o.setAttribute('aria-pressed', String(o === n)); });
       elegido = n; aviso.textContent = 'Ahora suelta o toca «' + n.textContent.replace('⋮⋮', '') + '» sobre su descripción.';
@@ -439,7 +445,7 @@
           aviso.textContent = '¡Correcto! La descripción completa quedó en la tarjeta.';
         } else {
           aviso.textContent = '¡Correcto! Lee la descripción completa.';
-          leer('¡Correcto! · ' + it.label, encabezado(it) + segs(it.segs), it.obj, d);
+          leer('¡Correcto! · ' + may(it.label), encabezado(it) + segs(it.segs), it.obj, d);
         }
         marcar(d.dataset.id);
       } else {

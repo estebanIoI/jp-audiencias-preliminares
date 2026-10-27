@@ -1,0 +1,9 @@
+Medios de los casos en video · Unidad 3
+
+Aquí van los archivos definitivos que entregue JP, con estos nombres exactos (rutas relativas, portables en SCORM):
+- u3-l1-e11 (Lección 1 · Aplicación al expediente del curso (caso de Beatriz Elena Morales)): medios/u3-l1-e11.mp4, medios/u3-l1-e11.es.vtt, medios/u3-l1-e11-lsc.mp4, medios/u3-l1-e11-lsc.es.vtt
+- u3-l2-e86 (Lección 2 · Aplicación al expediente del curso (caso de Beatriz Elena Morales)): medios/u3-l2-e86.mp4, medios/u3-l2-e86.es.vtt, medios/u3-l2-e86-lsc.mp4, medios/u3-l2-e86-lsc.es.vtt
+
+Formato previsto: video MP4 (H.264 + AAC) y subtítulos WebVTT en español (.vtt, UTF-8).
+Al recibirlos: copiarlos aquí, cambiar el estado del caso a «entregado» en herramientas/videos_casos.py, ejecutar el
+script y probar ambas versiones con subtítulos en el iframe y en el paquete SCORM antes de declararlos integrados.
