@@ -39,7 +39,8 @@
     acordeon: 'Despliega cada apartado para leerlo.',
     puntos: 'Toca los puntos sobre la ilustración.',
     mental: 'Explora cada rama del mapa mental.',
-    esquema: 'Recorre el mapa conceptual.'
+    esquema: 'Recorre el mapa conceptual.',
+    compara: 'Toca cada columna para compararla.'
   };
   /* Juan (26–27/10/2026): mayúscula inicial en rótulos, títulos y en todo bloque de texto (párrafo, viñeta, celda, extracto);
      artículos, leyes, sentencias y la Corte se ven y titilan. Solo cambia la letra con que arranca el bloque: si empieza
@@ -695,6 +696,39 @@
       }).join('') + '</div></div>';
   };
   B.esquema.activar = function (b, k, el) { abreLector(el, b); };
+
+  /* Comparador (contenido que contrasta figuras: «a diferencia de…», «buena fe simple y… exenta de culpa», «frente al
+     comiso»): columnas lado a lado; la que se toca se ensancha con su texto completo y las demás se compactan. Usa los
+     estilos .columnas del motor. */
+  B.compara = function (b, k) {
+    return tituloBloque(b, k) + '<div class="columnas comparador c' + b.items.length + '">' + b.items.map(function (it, i) {
+      return '<div class="columna tono' + (i % 3 + 1) + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's">' +
+        '<button type="button" class="col-boton" aria-expanded="false"><span class="col-cabeza"><span class="col-n">' + (i + 1) + '</span>' +
+        '<span class="col-visto">' + visto + ' Leído</span></span><span class="col-arte">' + svgObjeto(it.obj, 104) + '</span>' +
+        '<span class="col-rotulo">' + rot(it.label) + '</span><span class="col-toca">' + mano + ' Comparar</span></button>' +
+        '<div class="col-lectura" hidden></div></div>';
+    }).join('') + '</div>';
+  };
+  B.compara.activar = function (b, k, el) {
+    var cont = el.querySelector('.columnas'), cols = el.querySelectorAll('.columna'), n = b.items.length;
+    function abrir(c) {
+      var i = Number(c.dataset.i);
+      cols.forEach(function (o, j) {
+        var si = j === i, lec = o.querySelector('.col-lectura');
+        o.classList.toggle('abierta', si);
+        o.querySelector('.col-boton').setAttribute('aria-expanded', String(si));
+        lec.hidden = !si;
+        lec.innerHTML = si ? '<p class="lectura-texto">' + rico(segs(b.items[j].segs)) + '</p>' : '';
+      });
+      cont.classList.add('con-abierta');
+      cont.style.gridTemplateColumns = b.items.map(function (_, j) { return j === i ? (n === 2 ? '2.6fr' : '3.2fr') : '1fr'; }).join(' ');
+      var lec = c.querySelector('.col-lectura');
+      encajarPanel(lec); reanimar(lec); marcar(c.dataset.id);
+    }
+    cols.forEach(function (c) { c.querySelector('.col-boton').addEventListener('click', function () { abrir(c); }); });
+    abrir(cols[0]); /* la escena nunca empieza en blanco */
+    window.addEventListener('resize', function () { var l = el.querySelector('.columna.abierta .col-lectura'); if (l) encajarPanel(l); });
+  };
 
   /* Ver en pantalla completa (Juan, 27/10/2026: en todas las mediaciones, como prueba). Si el navegador o el iframe no lo
      permiten (sin allowfullscreen), la escena se abre en una pestaña nueva. */

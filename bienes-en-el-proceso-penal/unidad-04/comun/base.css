@@ -681,3 +681,13 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .ruta.p6 .camino,.ruta.p7 .camino{top:31px}
 .ruta.p6 .paso-n,.ruta.p7 .paso-n{left:calc(50% + 12px);width:20px;height:20px;font-size:11px}
 .ruta.p6 .paso-rotulo,.ruta.p7 .paso-rotulo{font-size:10.6px}
+
+/* Comparador: la columna abierta se ensancha (sin transición, para que el texto se ajuste de una vez) y muestra su texto
+   completo en vez de la ilustración; las demás quedan con número y rótulo. */
+.columnas.comparador{transition:none;grid-template-rows:minmax(0,1fr)}
+/* La fila toma el alto disponible: sin esto la columna crece con su texto y el ajuste de letra nunca actúa. */
+.col-boton{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;text-align:left;color:inherit;cursor:pointer}
+.columna.abierta .col-boton{flex:none}
+.columna.abierta .col-arte,.columna.abierta .col-toca{display:none}
+.columna .col-lectura{flex:1;min-height:0;overflow:hidden}
+.columna.abierta .col-lectura .lectura-texto{margin:0;font-size:var(--fs,15px);line-height:1.55;color:var(--tinta)}  /* gana a la regla heredada .columna.abierta .lectura-texto */
