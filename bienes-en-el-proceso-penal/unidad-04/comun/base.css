@@ -284,7 +284,9 @@ button{cursor:pointer}
 .ruta.p5,.linea.p5{--n:5}
 .camino b{position:absolute;left:0;top:-2px;height:4px;width:0;background:var(--oxido);border-radius:4px;transition:width .6s ease}
 .linea{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;flex:none;padding-top:4px}
-.linea.p4{--n:4}.linea.p3{--n:3}
+.linea.p4{--n:4}.linea.p3{--n:3}.linea.p2{--n:2}
+/* Historia del caso de 2–3 momentos (ejemplos prácticos): el camino une solo los centros de los pasos. */
+.linea.p2 .camino{left:25%;right:25%}.linea.p3 .camino{left:17%;right:17%}
 .linea .camino{position:absolute;left:10%;right:10%;top:44px;border-top:4px solid #c9d6d7;z-index:0}
 .linea .paso-arte,.ruta .paso-arte{width:68px;height:68px}
 .linea .paso-arte .obj-svg,.ruta .paso-arte .obj-svg{width:50px;height:50px}
@@ -691,3 +693,15 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .columna.abierta .col-arte,.columna.abierta .col-toca{display:none}
 .columna .col-lectura{flex:1;min-height:0;overflow:hidden}
 .columna.abierta .col-lectura .lectura-texto{margin:0;font-size:var(--fs,15px);line-height:1.55;color:var(--tinta)}  /* gana a la regla heredada .columna.abierta .lectura-texto */
+
+/* Lectura por partes (datos.pagina): una parte a la vista, con «Seguir leyendo», puntos y posición. */
+.parr[hidden]{display:none}
+.lectura-paginas{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.lectura-paginas button{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:2px solid var(--teal);border-radius:99px;background:var(--blanco);color:var(--marino);font:800 11.5px Montserrat,Arial,sans-serif;cursor:pointer}
+.lectura-paginas .pag-siguiente{margin-left:auto;background:var(--marino);border-color:var(--marino);color:var(--blanco)}
+.lectura-paginas button:disabled{opacity:.35;cursor:default}
+.pag-puntos{display:inline-flex;gap:5px}.pag-puntos i{width:8px;height:8px;border-radius:50%;background:var(--niebla);transition:background .2s}
+.pag-puntos i.activo{background:var(--teal)}
+.pag-estado{font:700 11px Montserrat,Arial,sans-serif;color:var(--marino);opacity:.8}
+/* El texto breve se centra en la caja de la ruta y de la historia: sin franjas vacías bajo el párrafo. */
+.ruta-lectura .ruta-texto{display:flex;flex-direction:column;justify-content:center}

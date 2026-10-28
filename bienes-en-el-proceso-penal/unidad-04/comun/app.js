@@ -62,11 +62,12 @@
   /* Párrafos con aire (Bienes, revisión de Juan: «que haga respirar un poquitico el párrafo»): con datos.respiro (caracteres
      por tramo), un párrafo largo se muestra en tramos de pocas oraciones, cada uno como párrafo visual, sin cambiar una
      letra. No corta tras abreviaturas, numerales de lista («1.»), iniciales ni dentro de una negrita. */
-  var FIN_ORACION = /[.!?][”’»")\]]*\s+(?=[«“"(¿¡A-ZÁÉÍÓÚÑ])/g;
-  var NO_CORTA = /(?:\b(?:art|arts|núm|num|inc|lit|par|No|p|pp|M\.P|Rad|ss|cfr|Cfr|ibid|Ibid|vgr|etc|S\.A|Dr|Sr|Sra|aprox|ed|Ed|vol|n|N|ord|cap|Ob|cit|op)|(?:^|\s)\d{1,2}|(?:^|[\s(«“"])[A-ZÁÉÍÓÚÑ])\.\s+$/;
+  var FIN_ORACION = /(?:[.!?][”’»")\]]*\s+(?=[«“"(¿¡A-ZÁÉÍÓÚÑ]|\d{1,2}\.\s)|:\s+(?=\d{1,2}\.\s))/g;
+  /* Antes de la abreviatura no puede haber una letra: «\b» de JavaScript no reconoce las tildes y tomaría «acción.» por «n.». */
+  var NO_CORTA = /(?:(?<![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])(?:art|arts|núm|num|inc|lit|par|No|p|pp|M\.P|Rad|ss|cfr|Cfr|ibid|Ibid|vgr|etc|S\.A|Dr|Sr|Sra|aprox|ed|Ed|vol|n|N|ord|cap|Ob|cit|op)|(?:^|\s)\d{1,2}|(?:^|[\s(«“"])[A-ZÁÉÍÓÚÑ])\.\s+$/;
   function tramos(t) {
     var lim = datos.respiro;
-    if (!lim || t.length < lim * 1.35) return [t];
+    if (!lim || t.length <= lim * 1.3) return [t];
     var oraciones = [], desde = 0, m;
     FIN_ORACION.lastIndex = 0;
     while ((m = FIN_ORACION.exec(t))) {
@@ -76,12 +77,19 @@
       desde = hasta;
     }
     oraciones.push(t.slice(desde).trim());
+    /* Una oración muy larga (citas legales) se divide en sus punto y coma, que la cierran a medias: el texto no cambia. */
+    oraciones = oraciones.reduce(function (a, o) {
+      if (o.length <= lim * 1.3) return a.concat([o]);
+      return a.concat(o.split(/(?<=;)\s+/).filter(function (x) { return x; }));
+    }, []);
     var out = [];
     oraciones.forEach(function (o) {
       var u = out.length - 1;
-      if (u >= 0 && (out[u].length < lim * 0.6 || out[u].length + o.length + 1 <= lim)) out[u] += ' ' + o; else out.push(o);
+      var junto = u >= 0 ? out[u].length + o.length + 1 : Infinity;
+      if (u >= 0 && (junto <= lim || (out[u].length < lim * 0.6 && junto <= lim * 1.3))) out[u] += ' ' + o; else out.push(o);
     });
-    if (out.length > 1 && out[out.length - 1].length < lim * 0.35) out[out.length - 2] += ' ' + out.pop();
+    var ultimo = out[out.length - 1];
+    if (out.length > 1 && ultimo.length < lim * 0.35 && out[out.length - 2].length + ultimo.length + 1 <= lim * 1.3) out[out.length - 2] += ' ' + out.pop();
     return out;
   }
   function linea(t) {
@@ -120,7 +128,7 @@
   function crecerLectura(caja) {
     var texto = caja.querySelector('.ruta-texto');
     caja.classList.remove('apretada', 'sin-arte', 'mini');
-    if (texto) for (var fs = 18; fs > 14.2; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(texto, 4) && caja.scrollHeight <= caja.clientHeight + 1) return; }
+    if (texto) for (var fs = 24; fs > 14.2; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(texto, 4) && caja.scrollHeight <= caja.clientHeight + 1) return; }
     caja.style.removeProperty('--fs'); ajustarLectura(caja);
   }
   function reanimar(el) { el.classList.remove('aparece'); void el.offsetWidth; el.classList.add('aparece'); }
@@ -225,6 +233,45 @@
   }
 
   /* ---------- Lector superpuesto común ---------- */
+  /* Textos que descansan (Juan y Esteban, 27/10/2026: «donde había textos largos hay que dejarlos descansar… un texto
+     larguísimo le hace dormir el cerebro»): con datos.pagina (caracteres por parte), una lectura más larga se muestra por
+     partes de uno o dos tramos, con «Seguir leyendo» y su posición; nada se recorta y todo queda en la página. «ajustar»
+     vuelve a encajar la letra en cada parte. */
+  function dosificar(caja, ajustar) {
+    var lim = datos.pagina, t = caja && caja.querySelector('.lectura-texto'), viejo = caja && caja.querySelector('.lectura-paginas');
+    if (viejo) viejo.remove();
+    if (!lim || !t) return false;
+    var partes = [].slice.call(t.querySelectorAll('.parr')), total = 0;
+    partes.forEach(function (x) { x.hidden = false; total += x.textContent.length; });
+    if (total <= lim * 1.08) return false;
+    var paginas = [[]], largo = 0;
+    partes.forEach(function (x) {
+      var L = x.textContent.length;
+      if (paginas[paginas.length - 1].length && largo + L > lim && (largo >= lim * 0.3 || largo + L > lim * 1.08)) { paginas.push([]); largo = 0; }
+      paginas[paginas.length - 1].push(x); largo += L;
+    });
+    if (paginas.length < 2) return false;
+    var pos = 0, nav = document.createElement('div');
+    nav.className = 'lectura-paginas';
+    nav.innerHTML = '<button type="button" class="pag-anterior" aria-label="Parte anterior"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>' +
+      '<span class="pag-puntos" aria-hidden="true">' + paginas.map(function () { return '<i></i>'; }).join('') + '</span><span class="pag-estado" aria-live="polite"></span>' +
+      '<button type="button" class="pag-siguiente">Seguir leyendo <i class="fas fa-arrow-right" aria-hidden="true"></i></button>';
+    t.parentNode.insertBefore(nav, t.nextSibling);
+    function ir(i) {
+      pos = i;
+      paginas.forEach(function (pg, j) { pg.forEach(function (x) { x.hidden = j !== i; }); });
+      nav.querySelector('.pag-estado').textContent = 'Parte ' + (i + 1) + ' de ' + paginas.length;
+      nav.querySelectorAll('.pag-puntos i').forEach(function (d, j) { d.classList.toggle('activo', j <= i); });
+      nav.querySelector('.pag-anterior').disabled = i === 0;
+      nav.querySelector('.pag-siguiente').disabled = i === paginas.length - 1;
+      if (ajustar) ajustar();
+      reanimar(t);
+    }
+    nav.querySelector('.pag-anterior').addEventListener('click', function (e) { e.stopPropagation(); ir(Math.max(0, pos - 1)); });
+    nav.querySelector('.pag-siguiente').addEventListener('click', function (e) { e.stopPropagation(); ir(Math.min(paginas.length - 1, pos + 1)); });
+    ir(0);
+    return true;
+  }
   function leer(titulo, texto, obj, desde) {
     var l = raiz.querySelector('.lector');
     retornoFoco = desde || null;
@@ -233,7 +280,7 @@
       (obj ? '<span class="lector-arte">' + svgObjeto(obj, 78) + '</span>' : '') +
       '<p class="lectura-eyebrow">' + esc(may(titulo)) + '</p><p class="lectura-texto">' + rico(texto) + '</p></div>';
     l.hidden = false;
-    encajarLector(l.firstChild);
+    if (!dosificar(l.firstChild, function () { encajarLector(l.firstChild); })) encajarLector(l.firstChild);
     reanimar(l.firstChild);
     l.querySelector('.cerrar').onclick = cerrarLector;
     l.firstChild.focus({ preventScroll: true });
@@ -379,7 +426,8 @@
         if (arte) arte.innerHTML = svgObjeto(it.obj, grande ? 150 : 92);
         panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
         marcar(f.dataset.id);
-        if (grande) encajarTexto(panel, panel.querySelector('.panel-texto'));
+        var pt = panel.querySelector('.panel-texto'), ajustar = grande ? function () { encajarTexto(panel, pt); } : null;
+        if (!dosificar(pt, ajustar) && ajustar) ajustar();
         reanimar(panel);
       });
     });
@@ -407,7 +455,7 @@
       var it = b.items[i];
       caja.innerHTML = '<div class="ruta-texto"><p class="lectura-eyebrow">' + (linea ? 'Momento ' : 'Paso ') + (i + 1) + ' de ' + n + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p></div>' +
         '<span class="ruta-arte">' + svgObjeto(it.obj, 150) + '</span>';
-      crecerLectura(caja);
+      if (!dosificar(caja.querySelector('.ruta-texto'), function () { crecerLectura(caja); })) crecerLectura(caja);
       reanimar(caja);
       sig.disabled = i >= n - 1;
       marcar(k + '-' + i);
@@ -621,15 +669,17 @@
         '<div class="acordeon-panel" hidden><p class="lectura-texto">' + rico(segs(it.segs)) + '</p></div></div>';
     }).join('') + '</div>';
   };
-  /* El apartado abierto ocupa el espacio que dejan los demás; la letra se reduce hasta que el texto cabe: nunca desplazamiento. */
+  /* El apartado abierto ocupa el espacio que dejan los demás; la letra crece si el texto es breve (hasta 22 px) y se reduce hasta que cabe: nunca desplazamiento. */
   function encajarPanel(p) {
-    for (var fs = 15; fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + 1) return; }
+    for (var fs = 22; fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + 1) return; }
   }
   B.acordeon.activar = function (b, k, el) {
     var cabs = el.querySelectorAll('.acordeon-cab');
     function abrir(c) {
       cabs.forEach(function (o) { var si = o === c; o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si); });
-      encajarPanel(c.nextElementSibling); reanimar(c.nextElementSibling); marcar(c.dataset.id);
+      var p = c.nextElementSibling;
+      if (!dosificar(p, function () { encajarPanel(p); })) encajarPanel(p);
+      reanimar(p); marcar(c.dataset.id);
     }
     cabs.forEach(function (c) { c.addEventListener('click', function () { abrir(c); }); });
     abrir(cabs[0]); /* la escena nunca empieza en blanco */
@@ -723,7 +773,8 @@
       cont.classList.add('con-abierta');
       cont.style.gridTemplateColumns = b.items.map(function (_, j) { return j === i ? (n === 2 ? '2.6fr' : '3.2fr') : '1fr'; }).join(' ');
       var lec = c.querySelector('.col-lectura');
-      encajarPanel(lec); reanimar(lec); marcar(c.dataset.id);
+      if (!dosificar(lec, function () { encajarPanel(lec); })) encajarPanel(lec);
+      reanimar(lec); marcar(c.dataset.id);
     }
     cols.forEach(function (c) { c.querySelector('.col-boton').addEventListener('click', function () { abrir(c); }); });
     abrir(cols[0]); /* la escena nunca empieza en blanco */
@@ -901,7 +952,9 @@
       var it = lista[i]; pos = i;
       botones.forEach(function (o, j) { o.setAttribute('aria-selected', String(j === i)); });
       caja.innerHTML = '<span class="ctx-icono">' + svgObjeto(it.obj, 84) + '</span><p class="lectura-eyebrow">' + (lista.length > 1 ? (i + 1) + ' de ' + lista.length + ' · ' : '') + rot(it.label) + '</p><p class="lectura-texto">' + rico(it.texto) + '</p>';
-      marcar(it.id); encajarTexto(cont, caja); reanimar(caja); /* marcar primero: «Exploración completa» cambia la altura */
+      marcar(it.id); /* marcar primero: «Exploración completa» cambia la altura */
+      if (!dosificar(caja, function () { encajarTexto(cont, caja); })) encajarTexto(cont, caja);
+      reanimar(caja);
     }
     botones.forEach(function (o) { o.addEventListener('click', function () { abrir(Number(o.dataset.i)); }); });
     abrir(0); /* la escena nunca empieza en blanco */
