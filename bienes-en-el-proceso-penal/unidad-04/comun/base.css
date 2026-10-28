@@ -566,3 +566,101 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
   .pag-caso,.pag-tarea,.pag-respuesta{grid-template-columns:1fr}.caso-pagina>.caso-figura,.caso-recuerde{display:none}
   .caso-punto span{display:none}.caso-encaja{overflow:visible}
 }
+
+/* ---------- Mediaciones para variar (Juan, 27/10/2026) y pantalla completa ---------- */
+.pantalla-completa{flex:none;display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border:2px solid var(--teal);border-radius:99px;background:var(--blanco);color:var(--marino);font:800 11px/1 Montserrat,Arial,sans-serif;white-space:nowrap}
+.pantalla-completa:hover,.pantalla-completa:focus-visible{background:var(--hielo)}
+.guia .avance{margin-left:auto}
+@media (max-width:520px){.pantalla-completa span{display:none}}
+
+.rejilla{flex:1;min-height:0;display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr)}
+.rejilla.n3,.rejilla.n5,.rejilla.n6{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Cinco ventanas: tres arriba y dos más anchas abajo, para llenar el marco sin hueco. */
+.rejilla.n5{grid-template-columns:repeat(6,minmax(0,1fr))}.rejilla.n5 .celda{grid-column:span 2}.rejilla.n5 .celda:nth-child(n+4){grid-column:span 3}
+.celda{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:0;padding:12px 14px 10px;border:2px solid var(--niebla);border-radius:16px;background:var(--hielo);text-align:left;color:var(--tinta);box-shadow:0 5px 0 var(--niebla);overflow:hidden;animation:subir .45s ease both;animation-delay:var(--d);transition:transform .15s ease,box-shadow .15s ease}
+.celda:nth-child(even){background:var(--blanco)}
+.celda:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--coral)}
+.celda.visto{border-color:var(--teal);box-shadow:0 5px 0 var(--teal)}
+.celda-n{position:absolute;right:10px;top:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--oxido);color:var(--blanco);font:800 12px Montserrat,Arial,sans-serif}
+.celda-arte{display:flex}.celda-arte .obj-svg{width:52px;height:auto}
+.rejilla.n2 .celda-arte .obj-svg,.rejilla.n3 .celda-arte .obj-svg{width:78px}
+.celda-rotulo{font:800 14.5px/1.25 Montserrat,Arial,sans-serif;color:var(--marino);padding-right:22px}
+.celda-extracto{font-size:12.6px;line-height:1.45;opacity:.88;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rejilla.n2 .celda-extracto,.rejilla.n3 .celda-extracto{-webkit-line-clamp:6;font-size:13.4px}
+.celda-toca{margin-top:auto;display:inline-flex;gap:6px;align-items:center;padding:3px 11px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 11px Montserrat,Arial,sans-serif}
+.celda-visto{display:none;color:var(--teal)}.celda.visto .celda-visto{display:inline}
+
+.acordeon{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.acordeon-item{flex:none;display:flex;flex-direction:column;min-height:0;border:2px solid var(--niebla);border-radius:12px;background:var(--blanco);overflow:hidden;animation:subir .4s ease both;animation-delay:var(--d)}
+.acordeon-item.abierto{flex:1;border-color:var(--teal)}
+.acordeon-cab{flex:none;display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px;border:0;background:var(--hielo);text-align:left;font:800 13.5px/1.25 Montserrat,Arial,sans-serif;color:var(--marino)}
+.acordeon-item.abierto .acordeon-cab{background:var(--teal);color:var(--blanco)}
+.acordeon-num{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:var(--oxido);color:var(--blanco);font-size:11.5px}
+.acordeon-ico{display:flex;flex:none}.acordeon-ico .obj-svg{width:26px;height:auto}
+.acordeon-rotulo{flex:1}
+.acordeon-visto{opacity:0;color:var(--teal)}.acordeon-cab.visto .acordeon-visto{opacity:1}.acordeon-item.abierto .acordeon-visto{color:var(--blanco)}
+.acordeon-flecha{transition:transform .2s ease}.acordeon-item.abierto .acordeon-flecha{transform:rotate(180deg)}
+.acordeon-panel{flex:1;min-height:0;overflow:hidden;padding:10px 16px 8px}
+.acordeon-panel .lectura-texto{font-size:var(--fs,15px);line-height:1.55;color:var(--tinta)}
+
+.puntos-escena{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 212px;gap:12px;padding:4px 12px 4px 4px;border-radius:14px;background:linear-gradient(180deg,var(--hielo) 0%,var(--blanco) 85%)}
+.puntos-marco{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.puntos-lienzo{position:relative;flex:none}
+.puntos-lienzo img{display:block;width:100%;height:100%;object-fit:contain}
+/* El círculo queda centrado en su ancla con translate; la entrada no usa «aparece», que termina en transform:none. */
+.hotspot{position:absolute;padding:0;border:0;background:none;transform:translate(-50%,-50%);animation:entraPunto .45s ease both;animation-delay:var(--d)}
+@keyframes entraPunto{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%)}}
+.hotspot-n{position:relative;flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--oxido);color:var(--blanco);font:800 13px Montserrat,Arial,sans-serif;box-shadow:0 0 0 4px #ffffffd9}
+.hotspot .hotspot-n::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--oxido);animation:latido 1.6s ease-out infinite}
+.hotspot:hover .hotspot-n{transform:scale(1.1)}
+.hotspot.visto .hotspot-n{background:var(--teal)}.hotspot.visto .hotspot-n::after{display:none}
+.puntos-leyenda{align-self:center;display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.punto-leyenda{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:2px solid var(--coral);border-radius:12px;background:var(--blanco);text-align:left;font:800 12.5px/1.25 Montserrat,Arial,sans-serif;color:var(--marino);box-shadow:0 3px 0 var(--coral);animation:subir .4s ease both;animation-delay:var(--d)}
+.punto-leyenda:hover,.punto-leyenda:focus-visible{background:var(--hielo)}
+.punto-leyenda .hotspot-n{width:26px;height:26px;font-size:12px;box-shadow:none}
+.punto-leyenda.visto{border-color:var(--teal);box-shadow:0 3px 0 var(--teal)}.punto-leyenda.visto .hotspot-n{background:var(--teal)}
+.leyenda-rotulo{flex:1}
+.hotspot-visto{display:none;color:var(--teal)}.punto-leyenda.visto .hotspot-visto{display:inline}
+@media (max-width:560px){.puntos-escena{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}}
+
+.mental{position:relative;flex:1;min-height:0;border-radius:14px;background:radial-gradient(circle at 50% 50%,var(--blanco) 0,var(--blanco) 32%,var(--hielo) 82%)}
+.mental-lineas{position:absolute;inset:0;width:100%;height:100%}
+.mental-lineas path{fill:none;stroke:var(--coral);stroke-width:3;vector-effect:non-scaling-stroke;stroke-dasharray:600;animation:trazoMental .9s ease both;animation-delay:var(--d)}
+@keyframes trazoMental{from{stroke-dashoffset:600}to{stroke-dashoffset:0}}
+.mental-centro{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30%;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px;border-radius:18px;background:var(--marino);color:var(--blanco);font:800 13.5px/1.3 Montserrat,Arial,sans-serif;text-align:center;box-shadow:0 6px 0 var(--teal)}
+.mental-centro i{color:var(--coral);font-size:18px}
+.rama-mental{position:absolute;transform:translate(-50%,-50%);width:32%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:2px solid var(--coral);border-radius:14px;background:var(--blanco);text-align:left;font:800 12.5px/1.25 Montserrat,Arial,sans-serif;color:var(--marino);box-shadow:0 4px 0 var(--coral);animation:nodoEntra .45s ease both;animation-delay:var(--d)}
+.rama-arte{display:flex;flex:none}.rama-mental .obj-svg{width:38px;height:auto}
+.rama-rotulo{flex:1}
+.rama-marca{display:flex;gap:4px;color:var(--oxido)}.rama-marca .fa-circle-check{display:none;color:var(--teal)}
+.rama-mental.visto{border-color:var(--teal);box-shadow:0 4px 0 var(--teal)}.rama-mental.visto .fa-circle-check{display:inline}.rama-mental.visto .fa-hand-pointer{display:none}
+/* Con 2–3 ramas, cada rama muestra el comienzo de su texto para que el mapa no quede vacío. */
+.mental.con-extracto .mental-centro{width:26%}
+.mental.con-extracto .rama-mental{width:33%;flex-wrap:wrap;padding:10px 12px}
+.rama-extracto{flex-basis:100%;font:400 12.4px/1.45 Roboto,Arial,sans-serif;color:var(--tinta);opacity:.88;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.mental.n2 .rama-extracto{-webkit-line-clamp:9;font-size:12.8px}
+
+.esquema{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center}
+.esquema-lineas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.esquema-lineas line{stroke:var(--coral);stroke-width:3;vector-effect:non-scaling-stroke}
+.esquema-raiz{position:relative;z-index:1;flex:none;height:19%;max-width:64%;display:flex;align-items:center;justify-content:center;margin-top:1%;padding:6px 20px;border-radius:16px;background:var(--marino);color:var(--blanco);font:800 14px/1.3 Montserrat,Arial,sans-serif;text-align:center;box-shadow:0 5px 0 var(--teal)}
+.esquema-hijos{position:relative;z-index:1;margin-top:auto;width:100%;height:59%;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.nodo-esquema{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:0;padding:10px 10px 8px;border:2px solid var(--coral);border-radius:14px;background:var(--blanco);text-align:center;color:var(--tinta);box-shadow:0 5px 0 var(--coral);overflow:hidden;animation:subir .45s ease both;animation-delay:var(--d)}
+.nodo-esquema:nth-child(even){background:var(--hielo)}
+.nodo-esquema.visto{border-color:var(--teal);box-shadow:0 5px 0 var(--teal)}
+.esquema-arte{display:flex}.esquema-arte .obj-svg{width:44px;height:auto}
+.esquema-rotulo{font:800 13px/1.25 Montserrat,Arial,sans-serif;color:var(--marino)}
+.esquema-extracto{font-size:11.8px;line-height:1.4;opacity:.88;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.esquema.n2 .esquema-extracto,.esquema.n3 .esquema-extracto{-webkit-line-clamp:6;font-size:12.6px}
+.esquema.n2 .esquema-extracto{-webkit-line-clamp:9;font-size:13px}
+.esquema-marca{margin-top:auto;display:inline-flex;gap:5px;align-items:center;padding:2px 10px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 10.5px Montserrat,Arial,sans-serif}
+.esquema-marca .fa-circle-check{display:none;color:var(--teal)}.nodo-esquema.visto .esquema-marca .fa-circle-check{display:inline}
+
+/* Ruta de 6–7 pasos (Bienes 2.2, «los siguientes pasos»: siete): nodos más pequeños para que quepan en el marco. */
+.ruta.p6,.linea.p6{--n:6}.ruta.p7,.linea.p7{--n:7}
+.ruta.p6 .camino{left:8.3%;right:8.3%}.ruta.p7 .camino{left:7.2%;right:7.2%}
+.ruta.p6 .paso-arte,.ruta.p7 .paso-arte{width:54px;height:54px}
+.ruta.p6 .paso-arte .obj-svg,.ruta.p7 .paso-arte .obj-svg{width:40px;height:40px}
+.ruta.p6 .camino,.ruta.p7 .camino{top:31px}
+.ruta.p6 .paso-n,.ruta.p7 .paso-n{left:calc(50% + 12px);width:20px;height:20px;font-size:11px}
+.ruta.p6 .paso-rotulo,.ruta.p7 .paso-rotulo{font-size:10.6px}

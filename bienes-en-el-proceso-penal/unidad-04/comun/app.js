@@ -34,7 +34,12 @@
     balanza: 'Coloca cada criterio en la balanza.',
     empareja: 'Elige un nombre y tócalo sobre su descripción.',
     caso: 'Resuelve el caso del expediente paso a paso.',
-    tabla: 'Elige cada pestaña para recorrer la tabla.'
+    tabla: 'Elige cada pestaña para recorrer la tabla.',
+    rejilla: 'Abre cada ventana para ver su contenido.',
+    acordeon: 'Despliega cada apartado para leerlo.',
+    puntos: 'Toca los puntos sobre la ilustración.',
+    mental: 'Explora cada rama del mapa mental.',
+    esquema: 'Recorre el mapa conceptual.'
   };
   /* Juan (26–27/10/2026): mayúscula inicial en rótulos, títulos y en todo bloque de texto (párrafo, viñeta, celda, extracto);
      artículos, leyes, sentencias y la Corte se ven y titilan. Solo cambia la letra con que arranca el bloque: si empieza
@@ -546,6 +551,133 @@
     el.querySelector('.ficha').click();
   };
 
+  /* ---------- Mediaciones para variar (Juan, 27/10/2026: «varíe con mapas conceptuales, mapa mental, acordeones, grids,
+     una imagen de fondo con hotspots») ----------
+     Rejilla que llena el marco, acordeón, puntos sobre la ilustración aprobada, mapa mental y mapa conceptual jerárquico.
+     Salvo el acordeón, que despliega el texto en su sitio, todas lo abren completo en el lector y marcan visto. */
+  function centroTitulo() { return String(escena.titulo_genially || datos.heading || '').replace(/\s*\(\d+ de \d+\)$/, ''); }
+  function abreLector(el, b) {
+    el.querySelectorAll('button[data-i]').forEach(function (c) {
+      c.addEventListener('click', function () { var it = b.items[Number(c.dataset.i)]; leer(it.label, segs(it.segs), it.obj, c); marcar(c.dataset.id); });
+    });
+  }
+
+  B.rejilla = function (b, k) {
+    var n = b.items.length, lim = n <= 3 ? 230 : n === 4 ? 150 : 95;
+    return tituloBloque(b, k) + '<div class="rejilla n' + n + '">' + b.items.map(function (it, i) {
+      return '<button type="button" class="celda' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.07) + 's">' +
+        '<span class="celda-n">' + (i + 1) + '</span><span class="celda-arte">' + svgObjeto(it.obj, 56) + '</span>' +
+        '<span class="celda-rotulo">' + rot(it.label) + '</span><span class="celda-extracto">' + esc(may(extracto(segs(it.segs), lim))) + '</span>' +
+        '<span class="celda-toca">' + mano + ' Ver más<span class="celda-visto">' + visto + '</span></span></button>';
+    }).join('') + '</div>';
+  };
+  B.rejilla.activar = function (b, k, el) { abreLector(el, b); };
+
+  B.acordeon = function (b, k) {
+    return tituloBloque(b, k) + '<div class="acordeon">' + b.items.map(function (it, i) {
+      return '<div class="acordeon-item" style="--d:' + (i * 0.06) + 's"><button type="button" class="acordeon-cab' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-n="' + i + '" aria-expanded="false">' +
+        '<span class="acordeon-num">' + (i + 1) + '</span><span class="acordeon-ico">' + svgObjeto(it.obj, 28) + '</span><span class="acordeon-rotulo">' + rot(it.label) + '</span>' +
+        '<span class="acordeon-visto">' + visto + '</span><i class="fas fa-chevron-down acordeon-flecha" aria-hidden="true"></i></button>' +
+        '<div class="acordeon-panel" hidden><p class="lectura-texto">' + rico(segs(it.segs)) + '</p></div></div>';
+    }).join('') + '</div>';
+  };
+  /* El apartado abierto ocupa el espacio que dejan los demás; la letra se reduce hasta que el texto cabe: nunca desplazamiento. */
+  function encajarPanel(p) {
+    for (var fs = 15; fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + 1) return; }
+  }
+  B.acordeon.activar = function (b, k, el) {
+    var cabs = el.querySelectorAll('.acordeon-cab');
+    function abrir(c) {
+      cabs.forEach(function (o) { var si = o === c; o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si); });
+      encajarPanel(c.nextElementSibling); reanimar(c.nextElementSibling); marcar(c.dataset.id);
+    }
+    cabs.forEach(function (c) { c.addEventListener('click', function () { abrir(c); }); });
+    abrir(cabs[0]); /* la escena nunca empieza en blanco */
+    window.addEventListener('resize', function () { var p = el.querySelector('.acordeon-panel:not([hidden])'); if (p) encajarPanel(p); });
+  };
+
+  /* Puntos sobre la ilustración aprobada de la escena: círculos numerados sobre los objetos (nunca en las cabezas) y, al
+     lado, la leyenda con los rótulos, para que ningún texto tape a los personajes. Las posiciones vienen en
+     datos.anclas[imagen] = {r: ancho/alto, p: [[x %, y %], …]}; el lienzo toma la proporción de la imagen para que cada
+     punto quede sobre su objeto con cualquier tamaño de iframe. Círculo y rótulo abren el mismo texto; con teclado se
+     recorre la leyenda. */
+  B.puntos = function (b, k) {
+    var img = escena.ilustracion, a = (datos.anclas && datos.anclas[img]) || { r: 1.5, p: [] }, n = b.items.length, circulos = '', leyenda = '';
+    b.items.forEach(function (it, i) {
+      var p = a.p[i] || [12 + 76 * i / Math.max(1, n - 1), 90], id = k + '-' + i;
+      circulos += '<button type="button" class="hotspot" data-id="' + id + '" data-i="' + i + '" tabindex="-1" aria-hidden="true" style="left:' + p[0] + '%;top:' + p[1] + '%;--d:' + (0.25 + i * 0.12) + 's">' +
+        '<span class="hotspot-n">' + (i + 1) + '</span></button>';
+      leyenda += '<li><button type="button" class="punto-leyenda' + refc(it.label) + '" data-id="' + id + '" data-i="' + i + '" style="--d:' + (0.2 + i * 0.08) + 's">' +
+        '<span class="hotspot-n">' + (i + 1) + '</span><span class="leyenda-rotulo">' + rot(it.label) + '</span><span class="hotspot-visto">' + visto + '</span></button></li>';
+    });
+    return tituloBloque(b, k) + '<div class="puntos-escena"><div class="puntos-marco"><div class="puntos-lienzo" data-r="' + a.r + '"><img src="' + srcImagen(img) + '" alt="">' +
+      circulos + '</div></div><ol class="puntos-leyenda">' + leyenda + '</ol></div>';
+  };
+  function ajustarLienzo(el) {
+    var c = el.querySelector('.puntos-marco'), l = el.querySelector('.puntos-lienzo');
+    if (!c || !l || !c.clientWidth || !c.clientHeight) return;
+    var r = Number(l.dataset.r) || 1.5, w = Math.min(c.clientWidth - 8, (c.clientHeight - 8) * r);
+    l.style.width = w + 'px'; l.style.height = (w / r) + 'px';
+  }
+  B.puntos.activar = function (b, k, el) {
+    ajustarLienzo(el);
+    if (window.ResizeObserver) new ResizeObserver(function () { ajustarLienzo(el); }).observe(el.querySelector('.puntos-marco'));
+    else window.addEventListener('resize', function () { ajustarLienzo(el); });
+    abreLector(el, b);
+  };
+
+  /* Mapa mental: la idea central (título de la escena) y sus ramas a izquierda y derecha, con trazos curvos. */
+  B.mental = function (b, k) {
+    /* Con 2–3 ramas cada una muestra además el comienzo de su texto, para que el mapa no quede vacío. */
+    var n = b.items.length, izq = Math.ceil(n / 2), lineas = '', nodos = '', conTexto = n <= 3;
+    b.items.forEach(function (it, i) {
+      var der = i >= izq, fila = der ? i - izq : i, filas = der ? n - izq : izq;
+      var y = filas === 1 ? 50 : conTexto ? 25 + 50 * fila / (filas - 1) : 13 + 74 * fila / (filas - 1), x = der ? 82 : 18, borde = der ? 66 : 34;
+      lineas += '<path d="M50 50 C ' + (der ? 60 : 40) + ' 50, ' + (der ? 60 : 40) + ' ' + y.toFixed(1) + ', ' + borde + ' ' + y.toFixed(1) + '" style="--d:' + (0.15 + i * 0.1) + 's"/>';
+      nodos += '<button type="button" class="rama-mental' + (der ? ' der' : '') + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="left:' + x + '%;top:' + y.toFixed(1) + '%;--d:' + (0.3 + i * 0.1) + 's">' +
+        '<span class="rama-arte">' + svgObjeto(it.obj, 40) + '</span><span class="rama-rotulo">' + rot(it.label) + '</span><span class="rama-marca">' + mano + visto + '</span>' +
+        (conTexto ? '<span class="rama-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : 130))) + '</span>' : '') + '</button>';
+    });
+    return '<div class="mental n' + n + (conTexto ? ' con-extracto' : '') + '"><svg class="mental-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
+      '<div class="mental-centro"><i class="fas fa-lightbulb" aria-hidden="true"></i><span>' + esc(may(centroTitulo())) + '</span></div>' + nodos + '</div>';
+  };
+  B.mental.activar = function (b, k, el) { abreLector(el, b); };
+
+  /* Mapa conceptual jerárquico: el concepto de la escena arriba y, unidos por conectores, sus elementos debajo. */
+  B.esquema = function (b, k) {
+    var n = b.items.length, xs = b.items.map(function (_, i) { return (i + 0.5) * 100 / n; });
+    var lineas = '<line x1="50" y1="21" x2="50" y2="31"/>' + (n > 1 ? '<line x1="' + xs[0] + '" y1="31" x2="' + xs[n - 1] + '" y2="31"/>' : '') +
+      xs.map(function (x) { return '<line x1="' + x + '" y1="31" x2="' + x + '" y2="40"/>'; }).join('');
+    return '<div class="esquema n' + n + '"><svg class="esquema-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
+      '<div class="esquema-raiz"><span>' + esc(may(centroTitulo())) + '</span></div><div class="esquema-hijos">' + b.items.map(function (it, i) {
+        return '<button type="button" class="nodo-esquema' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.3 + i * 0.08) + 's">' +
+          '<span class="esquema-arte">' + svgObjeto(it.obj, 46) + '</span><span class="esquema-rotulo">' + rot(it.label) + '</span>' +
+          '<span class="esquema-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : n <= 3 ? 170 : 105))) + '</span><span class="esquema-marca">' + mano + ' Ver más' + visto + '</span></button>';
+      }).join('') + '</div></div>';
+  };
+  B.esquema.activar = function (b, k, el) { abreLector(el, b); };
+
+  /* Ver en pantalla completa (Juan, 27/10/2026: en todas las mediaciones, como prueba). Si el navegador o el iframe no lo
+     permiten (sin allowfullscreen), la escena se abre en una pestaña nueva. */
+  function pantallaCompleta() {
+    var d = document, el = d.documentElement;
+    if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    var pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!pedir || d.fullscreenEnabled === false) { window.open(location.href, '_blank', 'noopener'); return; }
+    var p = pedir.call(el);
+    if (p && p.catch) p.catch(function () { window.open(location.href, '_blank', 'noopener'); });
+  }
+  function estadoPantalla() {
+    var on = !!(document.fullscreenElement || document.webkitFullscreenElement), b = raiz.querySelector('.pantalla-completa');
+    document.documentElement.classList.toggle('en-pantalla-completa', on);
+    if (!b) return;
+    b.querySelector('i').className = 'fas ' + (on ? 'fa-compress' : 'fa-expand');
+    b.querySelector('span').textContent = on ? 'Salir' : 'Pantalla completa';
+    b.setAttribute('aria-label', on ? 'Salir de pantalla completa' : 'Ver en pantalla completa');
+  }
+  document.addEventListener('fullscreenchange', estadoPantalla);
+  document.addEventListener('webkitfullscreenchange', estadoPantalla);
+
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
      posición y Anterior/Siguiente. Todo el texto de la fuente aparece en su orden: la situación, las preguntas y consignas,
@@ -707,7 +839,8 @@
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
     var conAvance = total > 0 && !(ctx && ctx.lista.length === 1);
     var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span>' + guia + '</span></p>' +
-      (conAvance ? '<div class="avance" role="status"><span class="avance-rotulo">Exploración</span><span class="barra"><i></i></span><output>0 / ' + total + '</output></div>' : '') + '</header>';
+      (conAvance ? '<div class="avance" role="status"><span class="avance-rotulo">Exploración</span><span class="barra"><i></i></span><output>0 / ' + total + '</output></div>' : '') +
+      '<button type="button" class="pantalla-completa" aria-label="Ver en pantalla completa"><i class="fas fa-expand" aria-hidden="true"></i><span>Pantalla completa</span></button></header>';
     var cuerpo = '';
     if (escena.titulo.length) cuerpo += '<p class="escena-titulo">' + esc(may(segs(escena.titulo))) + '</p>';
     if (escena.lead.length && !ctx) {
@@ -734,6 +867,8 @@
       b.addEventListener('click', function () { leer(b.dataset.rotulo, b.dataset.texto, b.dataset.obj, b); marcar(b.dataset.id); });
     });
     raiz.querySelector('.lector').addEventListener('click', function (e) { if (e.target.classList.contains('lector')) cerrarLector(); });
+    raiz.querySelector('.pantalla-completa').addEventListener('click', pantallaCompleta);
+    estadoPantalla();
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;

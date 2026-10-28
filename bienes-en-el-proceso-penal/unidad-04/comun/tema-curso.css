@@ -37,4 +37,19 @@
 mark.ref-texto{background:#E3F2F5;box-shadow:inset 0 -2px 0 #8AC4B8}
 .confeti i:nth-child(5n+1){background:#E3F2F5}
 @keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #07415C00}50%{box-shadow:0 0 0 6px #07415C33}}
+
+/* Párrafos con aire (Juan, 27/10/2026: «que haga respirar un poquitico el párrafo»). Si el texto no cabe, el ajuste
+   automático del motor reduce la letra: nunca desplazamiento. */
+.lectura-texto,.lector .lectura-texto,.panel .lectura-texto,.panel-texto .lectura-texto,.ctx-texto .lectura-texto,
+.columna.abierta .lectura-texto,.acordeon-panel .lectura-texto{line-height:1.62}
+.ruta-texto .lectura-texto,.caso-encaja .lectura-texto{line-height:1.58}
+.parr+.parr{margin-top:.75em}
+.lector-caja{padding:16px 22px 18px}
+/* Un solo texto (los «Ejemplo práctico» de una pieza): la caja de lectura gana ancho para que el párrafo respire sin
+   achicar la letra; la ilustración queda al lado. */
+.contexto.n1{grid-template-columns:minmax(0,1.38fr) minmax(0,.62fr)}
+
+/* Sin filtros sobre las imágenes (Juan notó un «blur»): un drop-shadow obliga a pintarlas como mapa de bits y se ven
+   borrosas cuando Genially escala el iframe. */
+.ctx-arte img,.def-ilus img,.col-arte .obj-svg{filter:none}
 @keyframes brillo{0%{box-shadow:0 0 0 0 #24635B66}100%{box-shadow:0 0 0 12px #24635B00}}
