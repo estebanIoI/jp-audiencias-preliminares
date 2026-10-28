@@ -40,7 +40,8 @@
     puntos: 'Toca los puntos sobre la ilustración.',
     mental: 'Explora cada rama del mapa mental.',
     esquema: 'Recorre el mapa conceptual.',
-    compara: 'Toca cada columna para compararla.'
+    compara: 'Toca cada columna para compararla.',
+    actividad: 'Elige una respuesta: si no es la correcta, lee la retroalimentación e inténtalo de nuevo.'
   };
   /* Juan (26–27/10/2026): mayúscula inicial en rótulos, títulos y en todo bloque de texto (párrafo, viñeta, celda, extracto);
      artículos, leyes, sentencias y la Corte se ven y titilan. Solo cambia la letra con que arranca el bloque: si empieza
@@ -781,6 +782,134 @@
     window.addEventListener('resize', function () { var l = el.querySelector('.columna.abierta .col-lectura'); if (l) encajarPanel(l); });
   };
 
+  /* ---------- Actividad con retroalimentación (Estándares interamericanos; reunión con Juan del 28/10/2026) ----------
+     Las actividades que el autor de la ficha preparó para H5P (pregunta de opción múltiple, conjunto de preguntas, decisiones,
+     verdadero o falso, escenario de decisiones encadenadas, clasificación). Juan: «en cuanto el estudiante presione una
+     respuesta incorrecta, le dé la retroalimentación para que él estudie y vuelva y responda la pregunta y si responde bien
+     pues pasa a la siguiente». Páginas: introducción (si la hay) → una pregunta por página → cierre. La retroalimentación se
+     abre en el lector; «Siguiente» se habilita al acertar. Tras acertar, cada opción vuelve a abrir la suya para repasar.
+     Datos (producir_estandares.py): intro y cierre [{tipo: p|li|rot|tabla, segs | filas}], preguntas [{cab, enunciado,
+     caption, opciones [{seg | texto, letra, ok, cab, retro}], respuesta, cab_retro, retro, fuente}]; modo «clasifica»: cada
+     afirmación con las categorías de la matriz de solución como opciones. */
+  function textoLineas(ls) {
+    return ls.map(function (l) {
+      if (l.tipo === 'tabla') return l.filas.map(function (f) { return f.map(seg).join(' · '); }).join('\n');
+      return segs(l.segs);
+    }).join('\n');
+  }
+  function sinMarca(t) { return String(t).replace(/^(?:Opción\s+)?[A-Da-d][.:)]\s+/, ''); }
+  B.actividad = function (b, k) {
+    var paginas = [];
+    if (b.intro.length) paginas.push('intro');
+    /* Una pregunta con su propia situación («Segunda situación. …» y sus hechos) la lee antes, en su página («x»). */
+    b.preguntas.forEach(function (q, i) { if (q.contexto && q.contexto.length) paginas.push('x' + i); paginas.push('q' + i); });
+    if (b.cierre.length) paginas.push('cierre');
+    b.paginas = paginas;
+    var nombre = b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ';
+    var html = paginas.map(function (p, n) {
+      var cuerpo;
+      if (p === 'intro' || p === 'cierre' || p[0] === 'x') {
+        var ls = p === 'intro' ? b.intro : p === 'cierre' ? b.cierre : b.preguntas[Number(p.slice(1))].contexto;
+        var rotulo = p === 'intro' ? 'Actividad' : p === 'cierre' ? 'Para cerrar la actividad' : 'Antes de la pregunta ' + (Number(p.slice(1)) + 1);
+        cuerpo = '<div class="act-hoja act-encaja"><p class="act-eyebrow"><i class="fas ' + (p === 'cierre' ? 'fa-flag-checkered' : p === 'intro' ? 'fa-puzzle-piece' : 'fa-folder-open') + '" aria-hidden="true"></i> ' +
+          rotulo + '</p><p class="lectura-texto">' + rico(textoLineas(ls)) + '</p></div>' +
+          '<figure class="act-figura" aria-hidden="true">' + svgObjeto(p === 'cierre' ? 'libros' : p === 'intro' ? 'expediente' : 'documento', 150) + '</figure>';
+      } else {
+        var i = Number(p.slice(1)), q = b.preguntas[i], dos = q.opciones.length <= 2;
+        cuerpo = '<div class="act-pregunta act-encaja"><p class="act-eyebrow"><i class="fas fa-circle-question" aria-hidden="true"></i> ' + nombre + (i + 1) + ' de ' + b.preguntas.length + '</p>' +
+          (q.cab !== null && q.cab !== undefined ? '<p class="act-cab">' + marcado(may(seg(q.cab))) + '</p>' : '') +
+          (q.enunciado.length ? '<p class="lectura-texto act-enunciado">' + rico(segs(q.enunciado)) + '</p>' : '') +
+          (q.caption !== null && q.caption !== undefined ? '<p class="act-caption">' + esc(may(seg(q.caption))) + '</p>' : '') +
+          '<div class="act-opciones' + (dos ? ' en-fila' : '') + '" role="group" aria-label="Opciones">' + q.opciones.map(function (o, j) {
+            var t = o.seg !== undefined && o.seg !== null ? sinMarca(seg(o.seg)) : o.texto;
+            return '<button type="button" class="act-opcion" data-q="' + i + '" data-j="' + j + '" style="--d:' + (j * 0.06) + 's"><span class="act-letra">' + esc(o.letra) + '</span>' +
+              '<span class="act-texto">' + marcado(may(t)) + '</span><span class="act-marca" aria-hidden="true"></span></button>';
+          }).join('') + '</div><p class="act-aviso" aria-live="polite"></p></div>';
+      }
+      return '<section class="act-pagina pag-' + (p[0] === 'q' ? 'pregunta' : p[0] === 'x' ? 'contexto' : p) + '" data-p="' + n + '"' + (n ? ' hidden' : '') + '>' + cuerpo + '</section>';
+    }).join('');
+    return '<div class="actividad" data-modo="' + b.modo + '">' + html +
+      '<nav class="act-nav" aria-label="Partes de la actividad"><button type="button" class="act-ant"><i class="fas fa-arrow-left" aria-hidden="true"></i> Anterior</button>' +
+      '<span class="act-puntos">' + paginas.map(function (p, n) {
+        var r = p === 'intro' ? 'Introducción' : p === 'cierre' ? 'Cierre' : p[0] === 'x' ? 'Situación de la ' + nombre.toLowerCase() + (Number(p.slice(1)) + 1) : nombre + (Number(p.slice(1)) + 1);
+        return '<button type="button" class="act-punto' + (p[0] === 'x' ? ' contexto' : '') + '" data-ir="' + n + '" aria-label="' + r + '"><span>' + (p[0] === 'q' ? Number(p.slice(1)) + 1 : p === 'intro' ? '<i class="fas fa-play" aria-hidden="true"></i>' : p[0] === 'x' ? '<i class="fas fa-folder-open" aria-hidden="true"></i>' : '<i class="fas fa-flag" aria-hidden="true"></i>') + '</span></button>';
+      }).join('') + '</span><button type="button" class="act-sig">Siguiente <i class="fas fa-arrow-right" aria-hidden="true"></i></button></nav></div>';
+  };
+  /* La letra de la página baja de a medio punto hasta que todo cabe (nunca desplazamiento); el texto breve crece hasta 19 px. */
+  function encajarAct(pg) {
+    var c = pg.querySelector('.act-encaja');
+    if (!c) return;
+    pg.classList.remove('sin-arte');
+    for (var fs = 19; fs >= 11.5; fs -= 0.5) {
+      c.style.setProperty('--fs', fs + 'px');
+      if (c.scrollHeight <= c.clientHeight + 1 && pg.scrollHeight <= pg.clientHeight + 1) return;
+      if (fs <= 14 && !pg.classList.contains('sin-arte') && pg.querySelector('.act-figura')) { pg.classList.add('sin-arte'); fs = 19.5; }
+    }
+  }
+  B.actividad.activar = function (b, k, el) {
+    var pags = el.querySelectorAll('.act-pagina'), puntos = el.querySelectorAll('.act-punto'), ant = el.querySelector('.act-ant'), sig = el.querySelector('.act-sig');
+    var pos = 0, resueltas = {};
+    function pregunta(n) { var p = b.paginas[n]; return p && p[0] === 'q' ? Number(p.slice(1)) : null; }
+    /* No se pasa de una pregunta sin acertarla («no lo deja pasar si no responde lo que es»). */
+    function cerrada(n) { for (var m = 0; m < n; m++) { var q = pregunta(m); if (q !== null && !resueltas[q]) return true; } return false; }
+    function ir(n) {
+      if (cerrada(n)) return;
+      pos = n;
+      pags.forEach(function (p, j) { p.hidden = j !== n; });
+      puntos.forEach(function (p, j) { p.setAttribute('aria-current', j === n ? 'step' : 'false'); p.classList.toggle('pasado', j < n); p.disabled = cerrada(j); });
+      var q = pregunta(n);
+      ant.disabled = n === 0;
+      sig.disabled = n === pags.length - 1 || (q !== null && !resueltas[q]);
+      var pg = pags[n];
+      if (b.paginas[n][0] !== 'q') {
+        var hoja = pg.querySelector('.act-hoja');
+        if (!dosificar(hoja, function () { encajarAct(pg); })) encajarAct(pg);
+      } else encajarAct(pg);
+      reanimar(pg);
+    }
+    el.querySelectorAll('.act-opcion').forEach(function (o) {
+      o.addEventListener('click', function () {
+        var i = Number(o.dataset.q), q = b.preguntas[i], op = q.opciones[Number(o.dataset.j)], aviso = o.closest('.act-pregunta').querySelector('.act-aviso');
+        var propia = (op.cab !== null && op.cab !== undefined ? seg(op.cab) + '\n' : '') + (op.retro ? segs(op.retro) : '');
+        var general = (q.cab_retro !== null && q.cab_retro !== undefined ? seg(q.cab_retro) + '\n' : '') + segs(q.retro || []);
+        var fuente = (q.fuente || []).length ? '\n' + segs(q.fuente) : '';
+        var clave = q.respuesta !== null && q.respuesta !== undefined ? seg(q.respuesta) : '';
+        if (resueltas[i]) {
+          /* Repaso: cada opción abre su propia retroalimentación. */
+          var t = op.ok ? [propia.trim(), general.trim(), clave].filter(Boolean).join('\n') + fuente : (propia || general) + fuente;
+          if (t.trim()) leer((op.ok ? 'Respuesta correcta · ' : 'Repaso · ') + 'opción ' + op.letra, t, null, o);
+          return;
+        }
+        if (op.ok) {
+          resueltas[i] = true;
+          o.classList.add('acierto');
+          o.querySelector('.act-marca').innerHTML = visto;
+          o.closest('.act-opciones').classList.add('resuelta');
+          aviso.className = 'act-aviso bien';
+          aviso.innerHTML = visto + ' ¡Correcto! ' + (pos < pags.length - 1 ? 'Ya puedes continuar.' : '');
+          marcar(k + '-' + i);
+          sig.disabled = pos === pags.length - 1;
+          puntos.forEach(function (p, j) { p.disabled = cerrada(j); });
+          var texto = [propia.trim(), general.trim(), clave].filter(Boolean).join('\n') + fuente;
+          if (texto.trim()) leer('¡Correcto! · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1), texto, null, o);
+        } else {
+          o.classList.remove('error'); void o.offsetWidth; o.classList.add('error', 'intentada');
+          o.querySelector('.act-marca').innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i>';
+          aviso.className = 'act-aviso mal';
+          aviso.textContent = 'Respuesta incorrecta. ' + ((propia || general).trim() ? 'Lee la retroalimentación y vuelve a intentarlo.' : 'Vuelve a intentarlo.');
+          var r = (propia || general) + fuente;
+          if (r.trim()) leer('Respuesta incorrecta · opción ' + op.letra, r, null, o);
+        }
+      });
+    });
+    puntos.forEach(function (p) { p.addEventListener('click', function () { ir(Number(p.dataset.ir)); }); });
+    ant.addEventListener('click', function () { ir(Math.max(0, pos - 1)); });
+    sig.addEventListener('click', function () { ir(Math.min(pags.length - 1, pos + 1)); });
+    ir(0);
+    if (document.fonts) document.fonts.ready.then(function () { encajarAct(pags[pos]); });
+    window.addEventListener('resize', function () { encajarAct(pags[pos]); });
+  };
+
   /* Ver en pantalla completa (Juan, 27/10/2026: en todas las mediaciones, como prueba). Si el navegador o el iframe no lo
      permiten (sin allowfullscreen), la escena se abre en una pestaña nueva. */
   function pantallaCompleta() {
@@ -792,10 +921,11 @@
     if (p && p.catch) p.catch(function () { window.open(location.href, '_blank', 'noopener'); });
   }
   /* En pantalla completa la escena conserva la composición del iframe (767 × 510) y crece con zoom, que vuelve a dibujar
-     la letra nítida en vez de agrandar una imagen (base.css centra la escena). */
+     la letra nítida en vez de agrandar una imagen (base.css centra la escena). En una pantalla más pequeña que el iframe,
+     como un celular acostado (844 × 390), se reduce hasta caber completa: si no, se cortaba abajo con el botón «Salir». */
   function zoomPantalla() {
     var on = document.documentElement.classList.contains('en-pantalla-completa');
-    raiz.style.zoom = on ? String(Math.max(1, Math.min(innerWidth / 767, innerHeight / 510))) : '';
+    raiz.style.zoom = on ? String(Math.min(innerWidth / 767, innerHeight / 510)) : '';
   }
   function estadoPantalla() {
     var on = !!(document.fullscreenElement || document.webkitFullscreenElement), b = raiz.querySelector('.pantalla-completa');
@@ -818,7 +948,8 @@
   var TAREA = /¿|\b(analice|determine|clasifique|explique|identifique|examine|deberá encontrar|establezca|indique|describa)\b/i;
   function oraciones(t) { return String(t).split(/(?<=[.?!])\s+(?=[¿¡A-ZÁÉÍÓÚÑ])/).filter(function (x) { return x.trim(); }); }
   function modeloCaso(b) {
-    var r = b.roles, m = { encabezado: 'Aplicación al expediente del curso', situacion: [], tareas: [], pista: [], instruccion: [], nota: [] };
+    /* «encabezado» y «nombre» del bloque (Estándares interamericanos: «Actividad de aprendizaje») reemplazan los de Audiencias. */
+    var r = b.roles, m = { encabezado: b.encabezado || 'Aplicación al expediente del curso', situacion: [], tareas: [], pista: [], instruccion: [], nota: [] };
     function clasificar(t, porRol) {
       if (/^Responda\b/.test(t)) m.instruccion.push(t);
       else if (/^Adicionalmente\b/.test(t)) m.nota.push(t);
@@ -843,7 +974,7 @@
     var sit = m.situacion.join(' ');
     if (sit && /[,:;]$/.test(sit.trim()) && m.tareas.length) { m.tareas[0] = sit + ' ' + m.tareas[0]; m.situacion = []; }
     var nombre = /caso de ((?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s?){2,4})/.exec(m.situacion.concat(m.tareas).join(' '));
-    m.nombre = nombre ? 'Caso de ' + nombre[1].trim() : 'Expediente del curso';
+    m.nombre = b.nombre || (nombre ? 'Caso de ' + nombre[1].trim() : 'Expediente del curso');
     m.situacion = m.situacion.reduce(function (a, x) { if (a.length && /,$/.test(a[a.length - 1].trim())) a[a.length - 1] += ' ' + x; else a.push(x); return a; }, []);
     /* Caso y tarea breves comparten página («El caso y su tarea»); si no, cada uno tiene la suya. */
     m.junto = m.situacion.length > 0 && (m.situacion.join(' ') + m.tareas.join(' ') + m.pista.join(' ')).length <= 460;

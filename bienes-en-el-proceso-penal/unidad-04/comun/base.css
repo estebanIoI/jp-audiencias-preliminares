@@ -20,7 +20,7 @@ button{cursor:pointer}
 :focus-visible{outline:3px solid var(--oxido);outline-offset:2px}
 [hidden]{display:none!important}
 
-.ova{position:relative;display:flex;flex-direction:column;gap:8px;width:100%;height:100dvh;min-height:360px;overflow:hidden;padding:10px 12px 12px;
+.ova{position:relative;container:ova/inline-size;display:flex;flex-direction:column;gap:8px;width:100%;height:100dvh;min-height:360px;overflow:hidden;padding:10px 12px 12px;
   background:var(--fondo);border:3px solid #A8D8CE;border-radius:16px;box-shadow:0 6px 18px #30615b1f}
 .escenario{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;animation:escenaEntra .5s ease both}
 
@@ -126,6 +126,8 @@ button{cursor:pointer}
 .camino{position:absolute;left:12%;right:12%;top:54px;height:0;border-top:4px dashed #b9c8c9;z-index:0}
 .ruta.p2 .camino{left:25%;right:25%}.ruta.p3 .camino{left:17%;right:17%}
 .ficha-avance{position:absolute;top:-13px;left:0;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--oxido);border:3px solid var(--blanco);box-shadow:0 3px 8px #ad4d3266;
+  /* La sombra sigue el acento del curso (paleta del curso, directriz general); la línea anterior queda para navegadores sin color-mix. */
+  box-shadow:0 3px 8px color-mix(in srgb,var(--oxido) 40%,transparent);
   transition:left .6s cubic-bezier(.4,1.3,.5,1)}
 .paso{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 4px 8px;border:0;border-radius:14px;background:transparent;color:var(--marino);animation:subir .5s ease both;animation-delay:var(--d)}
 .paso-arte{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:var(--blanco);border:3px solid var(--niebla);transition:transform .25s,border-color .25s}
@@ -206,7 +208,7 @@ button{cursor:pointer}
 .nav-local button:disabled{opacity:.35;cursor:default}
 
 /* Móvil y alturas cortas */
-@media (max-width:600px){
+@container ova (max-width:600px){
   .guia{flex-direction:column;align-items:stretch;gap:5px}.avance{min-width:0}
   .columnas.c3,.columnas.c4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   .columnas.con-abierta .columna:not(.abierta){display:none}
@@ -344,7 +346,7 @@ button{cursor:pointer}
 @keyframes caer{from{transform:translateY(-60px);opacity:0}to{transform:none;opacity:1}}
 @keyframes sacudir{0%,100%{transform:none}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
 
-@media (max-width:600px){
+@container ova (max-width:600px){
   .nodo{width:96px;font-size:10px}.nodo.nucleo{width:118px}.nodo .obj-svg{width:34px!important}
   .giros.n4,.giros.n5{--c:2}
   .balanza-zona{grid-template-columns:1fr}.balanza-svg{width:200px}
@@ -353,7 +355,7 @@ button{cursor:pointer}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 /* Móvil (alternativa; en Genially el iframe es 767 × 510): la escena se desplaza y nada se superpone */
-@media (max-width:600px){
+@container ova (max-width:600px){
   .escenario{overflow-y:auto;padding-bottom:6px}
   .bloque{flex:none}
   .mapa{min-height:330px}.lamina{min-height:250px}.panel-fichas{min-height:200px;overflow:visible}
@@ -405,7 +407,7 @@ button{cursor:pointer}
 .def{min-height:0;overflow:hidden}
 .empareja.amplio .def.foco{overflow:auto}
 
-@media (max-width:600px){.intro{z-index:3}.escenario>*{flex-shrink:0}}
+@container ova (max-width:600px){.intro{z-index:3}.escenario>*{flex-shrink:0}}
 /* Observaciones de Juan (26/10/2026): texto a un lado e ilustración de contexto al otro; referencias jurídicas visibles que titilan */
 .ruta-lectura{align-items:stretch}
 .ruta-texto{flex:1;min-width:0}
@@ -434,19 +436,19 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 .tabla-enc{font:800 10.5px/1.25 Montserrat,Arial,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:var(--crema)}
 .panel-tabla .lectura-texto{color:var(--blanco);font-size:13.6px;line-height:1.42}
 .tabla-pestanas .ficha{max-width:100%}
-@media (max-width:520px){.tabla-filas li{grid-auto-flow:row}}
+@container ova (max-width:520px){.tabla-filas li{grid-auto-flow:row}}
 .ruta-lectura.mini .lectura-texto{font-size:13px;line-height:1.38}.ruta-lectura.mini{padding:9px 13px}
 .tabla-pestanas{gap:5px}.tabla-pestanas .ficha{font-size:12px;padding:4px 11px 4px 4px}
 .tabla-filas.compacta{grid-template-columns:1fr 1fr;gap:4px 6px}.tabla-filas.compacta li{padding:4px 8px}
 .tabla-filas.compacta .lectura-texto{font-size:12.4px;line-height:1.3}
-@media (max-width:520px){.tabla-filas.compacta{grid-template-columns:1fr}}
+@container ova (max-width:520px){.tabla-filas.compacta{grid-template-columns:1fr}}
 .panel-tabla .panel-texto.con-ficha{display:flex;flex-direction:column;height:100%}
 .tabla-ficha{flex:1;display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;align-items:center;margin-top:10px}
 .tabla-ficha figure{margin:0;display:grid;place-items:center;align-self:stretch;padding:16px 8px;border-radius:18px;background:var(--hielo,#E3F1EE)}
 .tabla-ficha .tabla-filas li{grid-auto-flow:row;gap:14px;padding:14px 18px}
 .tabla-ficha .tabla-enc{font-size:12px}
 .tabla-ficha .lectura-texto{font-size:19px;line-height:1.42}
-@media (max-width:520px){.tabla-ficha{grid-template-columns:1fr}.tabla-ficha figure{display:none}.tabla-ficha .lectura-texto{font-size:15px}}
+@container ova (max-width:520px){.tabla-ficha{grid-template-columns:1fr}.tabla-ficha figure{display:none}.tabla-ficha .lectura-texto{font-size:15px}}
 
 /* ---------- Aprovechar el espacio (Juan, R8): texto a un lado e imagen de contexto al otro (27/10/2026) ---------- */
 .contexto{flex:1;min-height:0;display:grid;gap:0 16px;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);grid-template-rows:auto auto minmax(0,1fr);
@@ -487,7 +489,7 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 .empareja.amplio.con-figura{grid-template-columns:minmax(0,1fr) minmax(0,.5fr);grid-template-rows:auto minmax(0,1fr)}
 .empareja.amplio.con-figura>.nombres{grid-column:1}.empareja.amplio.con-figura>.defs{grid-column:1;grid-row:2}
 .empareja.amplio.con-figura>.ctx-arte{grid-column:2;grid-row:1/span 2}
-@media (max-width:600px){
+@container ova (max-width:600px){
   .contexto{grid-template-areas:"cab" "pun" "txt"}
   .contexto,.panel-fichas.con-figura,.empareja.amplio.con-figura{grid-template-columns:1fr}
   .contexto .ctx-arte,.panel-fichas.con-figura>.ctx-arte,.panel-fichas.con-figura>.panel-arte,.empareja.amplio.con-figura>.ctx-arte{display:none}
@@ -566,7 +568,7 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 .caso-punto[aria-current=step]{border-color:var(--teal);background:var(--teal);color:var(--blanco)}
 .caso-punto[aria-current=step]::before{background:var(--crema)}.caso-punto.pasado::before{background:var(--teal)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:600px){
+@container ova (max-width:600px){
   .pag-caso,.pag-tarea,.pag-respuesta{grid-template-columns:1fr}.caso-pagina>.caso-figura,.caso-recuerde{display:none}
   .caso-punto span{display:none}.caso-encaja{overflow:visible}
 }
@@ -575,7 +577,7 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 .pantalla-completa{flex:none;display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border:2px solid var(--teal);border-radius:99px;background:var(--blanco);color:var(--marino);font:800 11px/1 Montserrat,Arial,sans-serif;white-space:nowrap}
 .pantalla-completa:hover,.pantalla-completa:focus-visible{background:var(--hielo)}
 .guia .avance{margin-left:auto}
-@media (max-width:520px){.pantalla-completa span{display:none}}
+@container ova (max-width:520px){.pantalla-completa span{display:none}}
 /* Dentro de Genially (embebido) el botón va abajo a la izquierda (Esteban, 27/10/2026), en una franja propia para no
    tapar nada; sin «?escena» queda arriba, junto a la navegación interna. */
 .ova.embebido{padding-bottom:40px}
@@ -640,8 +642,7 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .punto-leyenda.visto{border-color:var(--teal);box-shadow:0 3px 0 var(--teal)}.punto-leyenda.visto .hotspot-n{background:var(--teal)}
 .leyenda-rotulo{flex:1}
 .hotspot-visto{display:none;color:var(--teal)}.punto-leyenda.visto .hotspot-visto{display:inline}
-@media (max-width:560px){.puntos-escena{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}}
-
+@container ova (max-width:560px){.puntos-escena{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}}
 .mental{position:relative;flex:1;min-height:0;border-radius:14px;background:radial-gradient(circle at 50% 50%,var(--blanco) 0,var(--blanco) 32%,var(--hielo) 82%)}
 .mental-lineas{position:absolute;inset:0;width:100%;height:100%}
 .mental-lineas path{fill:none;stroke:var(--coral);stroke-width:3;vector-effect:non-scaling-stroke;stroke-dasharray:600;animation:trazoMental .9s ease both;animation-delay:var(--d)}
@@ -705,3 +706,81 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .pag-estado{font:700 11px Montserrat,Arial,sans-serif;color:var(--marino);opacity:.8}
 /* El texto breve se centra en la caja de la ruta y de la historia: sin franjas vacías bajo el párrafo. */
 .ruta-lectura .ruta-texto{display:flex;flex-direction:column;justify-content:center}
+
+/* ---------- Actividad con retroalimentación (Estándares interamericanos, 28/10/2026) ----------
+   Las actividades de la ficha preparadas para H5P: una pregunta por página con sus opciones; el error abre su
+   retroalimentación y se vuelve a intentar; el acierto habilita «Siguiente». Introducción y cierre en una hoja con objeto. */
+.actividad{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.act-pagina{flex:1;min-height:0;display:grid;gap:14px;animation:aparece .45s ease both}
+.act-pagina[hidden]{display:none}
+.act-pagina.pag-intro,.act-pagina.pag-cierre,.act-pagina.pag-contexto{grid-template-columns:minmax(0,1.4fr) minmax(0,.6fr)}
+.act-pagina.pag-pregunta{grid-template-columns:minmax(0,1fr)}
+.act-pagina.sin-arte{grid-template-columns:minmax(0,1fr)}.act-pagina.sin-arte .act-figura{display:none}
+.act-hoja{--fs:16px;position:relative;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:safe center;gap:8px;margin-top:12px;padding:14px 18px;
+  border-radius:4px 16px 16px 16px;background:var(--blanco);border-left:6px solid var(--teal);box-shadow:0 8px 20px #003f5e1f}
+.act-hoja::before{content:"";position:absolute;left:-6px;top:-13px;width:150px;height:15px;border-radius:9px 12px 0 0;background:var(--teal)}
+.act-hoja .lectura-texto{font-size:var(--fs);line-height:1.55}
+.act-eyebrow{flex:none;display:flex;gap:6px;align-items:center;font:800 11.5px/1.3 Montserrat,Arial,sans-serif;color:var(--oxido)}
+.act-figura{margin:0;min-height:0;display:grid;place-items:center;border-radius:18px;background:radial-gradient(ellipse 60% 55% at 50% 55%,var(--hielo) 0 99%,transparent 100%)}
+.act-figura svg{width:min(100%,170px);height:auto}
+.act-pregunta{--fs:16px;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:safe center;gap:8px;padding:10px 16px;border-radius:16px;
+  background:var(--blanco);border:2px solid var(--niebla)}
+.act-cab{flex:none;font:800 calc(var(--fs) * 1.02)/1.3 Montserrat,Arial,sans-serif;color:var(--marino)}
+.act-enunciado{font-size:var(--fs);line-height:1.5}
+.act-caption{flex:none;font:700 calc(var(--fs) * .82)/1.3 Montserrat,Arial,sans-serif;color:var(--teal)}
+.act-opciones{display:grid;gap:7px}
+.act-opciones.en-fila{grid-template-columns:repeat(2,minmax(0,1fr))}
+.act-opcion{display:grid;grid-template-columns:28px minmax(0,1fr) 20px;gap:10px;align-items:center;padding:7px 12px;border:2px solid var(--niebla);border-radius:12px;
+  background:var(--hielo);color:var(--tinta);text-align:left;font-size:calc(var(--fs) * .92);line-height:1.38;box-shadow:0 3px 0 var(--niebla);
+  animation:aparece .4s var(--d,0s) ease both;transition:border-color .2s,background .2s,box-shadow .2s}
+.act-opcion:hover,.act-opcion:focus-visible{border-color:var(--teal);box-shadow:0 3px 0 var(--teal)}
+.act-letra{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--marino);color:var(--blanco);font:800 13px Montserrat,Arial,sans-serif}
+.act-marca{font-size:16px;color:var(--teal)}
+.act-opcion.error{animation:sacudir .4s ease}
+.act-opcion.intentada{border-style:dashed;background:var(--blanco);box-shadow:none}
+.act-opcion.intentada .act-letra{background:var(--niebla);color:var(--marino)}
+.act-opcion.intentada .act-marca{color:var(--marino)}
+.act-opcion.acierto{border-color:var(--teal);border-style:solid;background:var(--blanco);box-shadow:0 3px 0 var(--teal)}
+.act-opcion.acierto .act-letra{background:var(--teal)}
+.act-opciones.resuelta .act-opcion:not(.acierto){opacity:.78}
+.act-aviso{flex:none;min-height:16px;font:800 12px/1.3 Montserrat,Arial,sans-serif;color:var(--marino)}
+.act-aviso.bien{color:var(--teal)}
+.act-nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.act-puntos{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.act-punto{display:grid;place-items:center;width:26px;height:26px;padding:0;border:2px solid var(--teal);border-radius:50%;background:var(--blanco);color:var(--marino);font:800 11px Montserrat,Arial,sans-serif}
+.act-punto[aria-current="step"]{background:var(--teal);color:var(--blanco)}
+.act-punto.pasado{background:var(--hielo)}
+.act-punto:disabled{opacity:.4;cursor:default}
+.act-punto.contexto{border-style:dashed}
+.act-ant,.act-sig{display:inline-flex;gap:7px;align-items:center;border:0;border-radius:99px;background:var(--marino);color:var(--blanco);font:800 12px Montserrat,Arial,sans-serif;padding:7px 14px}
+.act-ant:disabled,.act-sig:disabled{opacity:.35;cursor:default}
+.act-sig:not(:disabled){animation:brillo 1.6s ease-out infinite}
+
+/* Pantalla angosta: un celular de pie, p. ej. la pestaña que abre «Pantalla completa» en un iPhone. Estas reglas y las
+   demás de pantalla angosta responden al ancho de la escena (@container ova), no al de la pantalla: en pantalla completa
+   la escena conserva su composición de 767 × 510 aunque el celular esté de pie (antes el collage perdía ventanas).
+   Va al final del archivo: con igual especificidad, gana a las reglas de escritorio de cada mediación. */
+@container ova (max-width:600px){
+  /* Puntos: en la escena que se desplaza, la ilustración necesita un alto propio (si no, quedaba en 2 px y los círculos
+     se amontonaban); la leyenda va en dos columnas debajo. */
+  .puntos-escena{grid-template-rows:minmax(240px,1fr) auto}
+  .puntos-leyenda{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .punto-leyenda{gap:6px;padding:6px 8px;font-size:11.5px}
+  .punto-leyenda .hotspot-n{width:22px;height:22px;font-size:11px}
+  /* Mapa mental: el centro arriba y las ramas en rejilla, sin líneas; el texto completo se abre al tocar cada rama. */
+  .mental{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:center;gap:8px;padding:10px}
+  .mental-lineas{display:none}
+  .mental-centro,.rama-mental,.mental.con-extracto .mental-centro,.mental.con-extracto .rama-mental{position:static;transform:none;width:auto;animation:subir .4s ease both;animation-delay:var(--d,0s)}
+  .mental-centro{grid-column:1/-1;flex-direction:row;justify-content:center;padding:10px 12px}
+  .rama-mental .obj-svg{width:28px}
+  .rama-extracto{display:none}
+  /* Comparador: las columnas en filas; la abierta toma el alto y las cerradas quedan como botones para cambiar. */
+  .columnas.comparador{grid-template-columns:1fr!important;grid-template-rows:repeat(var(--n,2),minmax(0,1fr))}
+  .columnas.comparador.con-abierta .columna:not(.abierta){display:flex}
+  .columnas.comparador.con-abierta.c2:has(.abierta[data-i="0"]){grid-template-rows:minmax(0,1fr) auto}
+  .columnas.comparador.con-abierta.c2:has(.abierta[data-i="1"]){grid-template-rows:auto minmax(0,1fr)}
+  .columnas.comparador.con-abierta.c3:has(.abierta[data-i="0"]){grid-template-rows:minmax(0,1fr) auto auto}
+  .columnas.comparador.con-abierta.c3:has(.abierta[data-i="1"]){grid-template-rows:auto minmax(0,1fr) auto}
+  .columnas.comparador.con-abierta.c3:has(.abierta[data-i="2"]){grid-template-rows:auto auto minmax(0,1fr)}
+  .columnas.comparador .columna.abierta .col-arte{display:none}
+}
