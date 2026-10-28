@@ -420,6 +420,8 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 /* Unidades 2–4: párrafos, viñetas, notas al pie y tablas de la fuente */
 .parr{display:block}.parr+.parr{margin-top:.5em}
 .parr.vineta{padding-left:1.05em;text-indent:-1.05em;margin-top:.25em}
+/* Tramos de un párrafo largo (datos.respiro): un poco menos de aire que entre párrafos; tras una viñeta, con su sangría. */
+.parr+.parr.tramo{margin-top:.45em}.parr.vineta-sigue{padding-left:1.05em}
 .nota-pie{margin-top:.7em!important;padding-top:.45em;border-top:1px dashed var(--niebla);font-size:12.6px;line-height:1.42;color:#4b5557}
 .nota-pie sup,.llamada{font:800 10px Montserrat,Arial,sans-serif;color:var(--oxido);margin-left:1px}
 .panel-tabla{display:block}
@@ -572,23 +574,38 @@ mark.ref-texto{background:#F3F4BC;color:var(--marino);font-weight:700;padding:0 
 .pantalla-completa:hover,.pantalla-completa:focus-visible{background:var(--hielo)}
 .guia .avance{margin-left:auto}
 @media (max-width:520px){.pantalla-completa span{display:none}}
+/* Dentro de Genially (embebido) el botón va abajo a la izquierda (Esteban, 27/10/2026), en una franja propia para no
+   tapar nada; sin «?escena» queda arriba, junto a la navegación interna. */
+.ova.embebido{padding-bottom:40px}
+.ova.embebido .pantalla-completa{position:absolute;left:12px;bottom:8px;z-index:6}
+/* Pantalla completa: la escena con su composición de iframe, centrada; app.js le pone el zoom. */
+html.en-pantalla-completa{background:var(--hielo)}
+html.en-pantalla-completa body{display:grid;place-items:center;overflow:hidden}
+html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 
-.rejilla{flex:1;min-height:0;display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr)}
-.rejilla.n3,.rejilla.n5,.rejilla.n6{grid-template-columns:repeat(3,minmax(0,1fr))}
-/* Cinco ventanas: tres arriba y dos más anchas abajo, para llenar el marco sin hueco. */
-.rejilla.n5{grid-template-columns:repeat(6,minmax(0,1fr))}.rejilla.n5 .celda{grid-column:span 2}.rejilla.n5 .celda:nth-child(n+4){grid-column:span 3}
-.celda{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:0;padding:12px 14px 10px;border:2px solid var(--niebla);border-radius:16px;background:var(--hielo);text-align:left;color:var(--tinta);box-shadow:0 5px 0 var(--niebla);overflow:hidden;animation:subir .45s ease both;animation-delay:var(--d);transition:transform .15s ease,box-shadow .15s ease}
-.celda:nth-child(even){background:var(--blanco)}
-.celda:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--coral)}
+/* Rejilla en collage: ventanas de distinto tamaño que llenan el marco (la primera, alta; con 4, la segunda, ancha), con
+   el rótulo arriba y la ilustración debajo; el número late mientras la ventana no se ha abierto. */
+.rejilla{flex:1;min-height:0;display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+.rejilla.n2{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.rejilla.n3 .celda:first-child,.rejilla.n4 .celda:first-child,.rejilla.n5 .celda:first-child{grid-row:span 2}
+.rejilla.n3 .celda:not(:first-child),.rejilla.n4 .celda:nth-child(2){grid-column:span 2}
+.celda{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0;padding:10px 12px 8px;border:2px solid var(--niebla);border-radius:16px;background:var(--hielo);text-align:left;color:var(--marino);box-shadow:0 5px 0 var(--niebla);overflow:hidden;animation:subir .45s ease both;animation-delay:var(--d);transition:transform .15s ease,box-shadow .15s ease}
+.celda:nth-child(3n+2){background:var(--blanco)}
+.celda:nth-child(3n){background:color-mix(in srgb,var(--coral) 24%,var(--blanco))}
+.celda:hover,.celda:focus-visible{transform:translateY(-2px);box-shadow:0 7px 0 var(--coral)}
 .celda.visto{border-color:var(--teal);box-shadow:0 5px 0 var(--teal)}
-.celda-n{position:absolute;right:10px;top:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--oxido);color:var(--blanco);font:800 12px Montserrat,Arial,sans-serif}
-.celda-arte{display:flex}.celda-arte .obj-svg{width:52px;height:auto}
-.rejilla.n2 .celda-arte .obj-svg,.rejilla.n3 .celda-arte .obj-svg{width:78px}
-.celda-rotulo{font:800 14.5px/1.25 Montserrat,Arial,sans-serif;color:var(--marino);padding-right:22px}
-.celda-extracto{font-size:12.6px;line-height:1.45;opacity:.88;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.rejilla.n2 .celda-extracto,.rejilla.n3 .celda-extracto{-webkit-line-clamp:6;font-size:13.4px}
-.celda-toca{margin-top:auto;display:inline-flex;gap:6px;align-items:center;padding:3px 11px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 11px Montserrat,Arial,sans-serif}
-.celda-visto{display:none;color:var(--teal)}.celda.visto .celda-visto{display:inline}
+.celda-cab{flex:none;display:flex;align-items:flex-start;gap:8px}
+.celda-n{position:relative;flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--oxido);color:var(--blanco);font:800 12px Montserrat,Arial,sans-serif}
+.celda:not(.visto) .celda-n::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--oxido);animation:latido 1.6s ease-out infinite}
+.celda.visto .celda-n{background:var(--teal)}
+.celda-rotulo{flex:1;font:800 14px/1.25 Montserrat,Arial,sans-serif;color:var(--marino)}
+.rejilla.n3 .celda:first-child .celda-rotulo,.rejilla.n4 .celda:first-child .celda-rotulo,.rejilla.n5 .celda:first-child .celda-rotulo{font-size:16px}
+.celda-marca{flex:none;color:var(--oxido);font-size:13px}.celda-marca .fa-circle-check{display:none;color:var(--teal)}
+.celda.visto .celda-marca .fa-circle-check{display:inline}.celda.visto .celda-marca .fa-hand-pointer{display:none}
+.celda-foto{flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center}
+.celda-foto img{display:block;max-width:100%;max-height:100%;object-fit:contain;transition:transform .3s ease}
+.celda:hover .celda-foto img{transform:scale(1.04)}
+.celda-foto.sin-foto .obj-svg{width:auto;height:100%;max-height:130px}
 
 .acordeon{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 .acordeon-item{flex:none;display:flex;flex-direction:column;min-height:0;border:2px solid var(--niebla);border-radius:12px;background:var(--blanco);overflow:hidden;animation:subir .4s ease both;animation-delay:var(--d)}

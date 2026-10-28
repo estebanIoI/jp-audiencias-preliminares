@@ -54,12 +54,42 @@
   function refc(s) { return esRef(s) ? ' ref' : ''; }
   function rot(s) { return (esRef(s) ? '<i class="fas fa-book-open ref-ico" aria-hidden="true"></i>' : '') + esc(may(s)); }
   /* Cada línea es un párrafo de la fuente; «[^n] …» al inicio es una nota al pie y «[^n]» en el texto, su llamada. */
+  function marcado(s) {
+    return esc(s).replace(REF, function (m) { return '<mark class="ref-texto">' + m + '</mark>'; })
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\[\^(\d+)\]/g, '<sup class="llamada">$1</sup>');
+  }
+  /* Párrafos con aire (Bienes, revisión de Juan: «que haga respirar un poquitico el párrafo»): con datos.respiro (caracteres
+     por tramo), un párrafo largo se muestra en tramos de pocas oraciones, cada uno como párrafo visual, sin cambiar una
+     letra. No corta tras abreviaturas, numerales de lista («1.»), iniciales ni dentro de una negrita. */
+  var FIN_ORACION = /[.!?][”’»")\]]*\s+(?=[«“"(¿¡A-ZÁÉÍÓÚÑ])/g;
+  var NO_CORTA = /(?:\b(?:art|arts|núm|num|inc|lit|par|No|p|pp|M\.P|Rad|ss|cfr|Cfr|ibid|Ibid|vgr|etc|S\.A|Dr|Sr|Sra|aprox|ed|Ed|vol|n|N|ord|cap|Ob|cit|op)|(?:^|\s)\d{1,2}|(?:^|[\s(«“"])[A-ZÁÉÍÓÚÑ])\.\s+$/;
+  function tramos(t) {
+    var lim = datos.respiro;
+    if (!lim || t.length < lim * 1.35) return [t];
+    var oraciones = [], desde = 0, m;
+    FIN_ORACION.lastIndex = 0;
+    while ((m = FIN_ORACION.exec(t))) {
+      var hasta = m.index + m[0].length, previo = t.slice(0, hasta);
+      if (NO_CORTA.test(previo) || previo.split('**').length % 2 === 0) continue;
+      oraciones.push(t.slice(desde, hasta).trim());
+      desde = hasta;
+    }
+    oraciones.push(t.slice(desde).trim());
+    var out = [];
+    oraciones.forEach(function (o) {
+      var u = out.length - 1;
+      if (u >= 0 && (out[u].length < lim * 0.6 || out[u].length + o.length + 1 <= lim)) out[u] += ' ' + o; else out.push(o);
+    });
+    if (out.length > 1 && out[out.length - 1].length < lim * 0.35) out[out.length - 2] += ' ' + out.pop();
+    return out;
+  }
   function linea(t) {
     var nota = /^\[\^(\d+)\]\s*/.exec(t), cuerpo = may(nota ? t.slice(nota[0].length) : t);
-    var h = esc(cuerpo).replace(REF, function (m) { return '<mark class="ref-texto">' + m + '</mark>'; })
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\[\^(\d+)\]/g, '<sup class="llamada">$1</sup>');
-    if (nota) return '<span class="parr nota-pie"><sup>' + nota[1] + '</sup> ' + h + '</span>';
-    return '<span class="parr' + (/^• /.test(t) ? ' vineta' : '') + '">' + h + '</span>';
+    if (nota) return '<span class="parr nota-pie"><sup>' + nota[1] + '</sup> ' + marcado(cuerpo) + '</span>';
+    var vin = /^• /.test(t);
+    return tramos(cuerpo).map(function (x, i) {
+      return '<span class="parr' + (vin ? (i ? ' tramo vineta-sigue' : ' vineta') : i ? ' tramo' : '') + '">' + marcado(x) + '</span>';
+    }).join('');
   }
   function rico(s) { return String(s).split('\n').map(linea).join(''); }
   function seg(i) { return (escena.vineta && escena.vineta.indexOf(i) >= 0 ? '• ' : '') + escena.segmentos[i]; }
@@ -202,9 +232,15 @@
       (obj ? '<span class="lector-arte">' + svgObjeto(obj, 78) + '</span>' : '') +
       '<p class="lectura-eyebrow">' + esc(may(titulo)) + '</p><p class="lectura-texto">' + rico(texto) + '</p></div>';
     l.hidden = false;
+    encajarLector(l.firstChild);
     reanimar(l.firstChild);
     l.querySelector('.cerrar').onclick = cerrarLector;
     l.firstChild.focus({ preventScroll: true });
+  }
+  /* Si el texto no cabe en el lector, la letra baja de a medio punto (hasta 12 px): nunca desplazamiento. */
+  function encajarLector(caja) {
+    var t = caja.querySelector('.lectura-texto'), fs = parseFloat(getComputedStyle(t).fontSize);
+    while (caja.scrollHeight > caja.clientHeight + 1 && fs > 12) { fs -= 0.5; t.style.fontSize = fs + 'px'; }
   }
   function cerrarLector() {
     var l = raiz.querySelector('.lector');
@@ -562,13 +598,16 @@
     });
   }
 
+  /* Rejilla en collage (Esteban, 27/10/2026: «unos recuadros… con una imagen… al tocarlos se abre un modal con el texto…
+     como un collage»): ventanas de distinto tamaño que llenan el marco, cada una con su rótulo arriba y, debajo, una
+     ilustración aprobada distinta («ilus», la elige el generador); el texto nunca va sobre la imagen. Al tocarla, el texto
+     completo se abre en el lector. Sin «ilus» (otros cursos) se dibuja su objeto. */
   B.rejilla = function (b, k) {
-    var n = b.items.length, lim = n <= 3 ? 230 : n === 4 ? 150 : 95;
-    return tituloBloque(b, k) + '<div class="rejilla n' + n + '">' + b.items.map(function (it, i) {
+    return tituloBloque(b, k) + '<div class="rejilla n' + b.items.length + '">' + b.items.map(function (it, i) {
       return '<button type="button" class="celda' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.07) + 's">' +
-        '<span class="celda-n">' + (i + 1) + '</span><span class="celda-arte">' + svgObjeto(it.obj, 56) + '</span>' +
-        '<span class="celda-rotulo">' + rot(it.label) + '</span><span class="celda-extracto">' + esc(may(extracto(segs(it.segs), lim))) + '</span>' +
-        '<span class="celda-toca">' + mano + ' Ver más<span class="celda-visto">' + visto + '</span></span></button>';
+        '<span class="celda-cab"><span class="celda-n">' + (i + 1) + '</span><span class="celda-rotulo">' + rot(it.label) + '</span>' +
+        '<span class="celda-marca">' + mano + visto + '</span></span>' +
+        (it.ilus ? '<span class="celda-foto"><img src="' + srcImagen(it.ilus) + '" alt=""></span>' : '<span class="celda-foto sin-foto">' + svgObjeto(it.obj, 96) + '</span>') + '</button>';
     }).join('') + '</div>';
   };
   B.rejilla.activar = function (b, k, el) { abreLector(el, b); };
@@ -667,9 +706,16 @@
     var p = pedir.call(el);
     if (p && p.catch) p.catch(function () { window.open(location.href, '_blank', 'noopener'); });
   }
+  /* En pantalla completa la escena conserva la composición del iframe (767 × 510) y crece con zoom, que vuelve a dibujar
+     la letra nítida en vez de agrandar una imagen (base.css centra la escena). */
+  function zoomPantalla() {
+    var on = document.documentElement.classList.contains('en-pantalla-completa');
+    raiz.style.zoom = on ? String(Math.max(1, Math.min(innerWidth / 767, innerHeight / 510))) : '';
+  }
   function estadoPantalla() {
     var on = !!(document.fullscreenElement || document.webkitFullscreenElement), b = raiz.querySelector('.pantalla-completa');
     document.documentElement.classList.toggle('en-pantalla-completa', on);
+    zoomPantalla();
     if (!b) return;
     b.querySelector('i').className = 'fas ' + (on ? 'fa-compress' : 'fa-expand');
     b.querySelector('span').textContent = on ? 'Salir' : 'Pantalla completa';
@@ -677,6 +723,7 @@
   }
   document.addEventListener('fullscreenchange', estadoPantalla);
   document.addEventListener('webkitfullscreenchange', estadoPantalla);
+  window.addEventListener('resize', zoomPantalla);
 
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
