@@ -43,5 +43,18 @@ mark.ref-texto{background:#F7F4C7;box-shadow:inset 0 -2px 0 #84C6BC}
 /* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
 .ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
 
+/* Tarjeta de retroalimentación de las actividades (la aprobada en Estándares), con los colores de esta portada. */
+.tarjeta-retro .tr-izq{background:#E6F4F2}
+.tarjeta-retro .tr-izq::before{background:#C2E3DE}
+.tarjeta-retro .tr-globo{background:#07415C}
+.tarjeta-retro .tr-globo::after{border-top-color:#07415C}
+.tarjeta-retro .tr-chip{background:#E6F4F2;color:#07415C}
+.tarjeta-retro .tr-x,.tarjeta-retro.bien .tr-x{background:#1F5E6F}
+.tarjeta-retro .tr-titulo,.tarjeta-retro .tr-sub{color:#07415C}
+.tarjeta-retro .tr-titulo b,.tarjeta-retro.bien .tr-titulo b{color:#1F5E6F}
+.tarjeta-retro .tr-linea{background:#84C6BC}
+.tarjeta-retro .tr-boton{background:#07415C}
+.tarjeta-retro .tr-boton:hover,.tarjeta-retro .tr-boton:focus-visible{background:#1F5E6F}
+
 /* Caja clave de Juan con los colores del curso: fondo crema de la portada y borde de la franja. */
 .caja-clave{background:var(--clave-fondo);border-color:var(--clave-borde)}
