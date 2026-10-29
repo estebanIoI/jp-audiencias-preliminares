@@ -890,3 +890,5 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .giros.dos-filas .giro-int{min-height:0}
 .giros.dos-filas .frente .giro-arte .obj-svg{width:58px;height:auto}
 .giros.dos-filas .giro-rotulo{font-size:14px}
+.sin-huecos .panel-tabla .tabla-filas:not(.compacta) .lectura-texto{font-size:var(--fs,15px);line-height:1.45}
+.sin-huecos .panel-tabla .tabla-filas:not(.compacta) .tabla-enc{font-size:max(11px,calc(var(--fs,15px) * .72))}

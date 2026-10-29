@@ -131,6 +131,9 @@
      texto un hueco de 110 px o más, la caja recibe allí la ilustración de relleno de la escena (escena.relleno: aprobada,
      del tema del texto y distinta de las que la escena ya muestra). */
   function topeLetra(normal) { return datos.sinHuecos ? Math.max(normal, 25) : normal; }
+  /* Holgura del encaje: con datos.sinHuecos se deja 4 px libres, porque otro navegador dibuja la misma fuente 1–3 px más alta y
+     el panel abriría una barra de desplazamiento. */
+  function holgura() { return datos.sinHuecos ? -3 : 1; }
   function alturaContenido(caja) {
     var arriba = Infinity, abajo = -Infinity, w = document.createTreeWalker(caja, NodeFilter.SHOW_TEXT), n, r = document.createRange();
     function sumar(b) { if (b.width > 0 && b.height > 0) { arriba = Math.min(arriba, b.top); abajo = Math.max(abajo, b.bottom); } }
@@ -297,8 +300,8 @@
      larguísimo le hace dormir el cerebro»): con datos.pagina (caracteres por parte), una lectura más larga se muestra por
      partes de uno o dos tramos, con «Seguir leyendo» y su posición; nada se recorta y todo queda en la página. «ajustar»
      vuelve a encajar la letra en cada parte. */
-  function dosificar(caja, ajustar) {
-    var lim = datos.pagina, t = caja && caja.querySelector('.lectura-texto'), viejo = caja && caja.querySelector('.lectura-paginas');
+  function dosificar(caja, ajustar, limite) {
+    var lim = limite || datos.pagina, t = caja && caja.querySelector('.lectura-texto'), viejo = caja && caja.querySelector('.lectura-paginas');
     if (viejo) viejo.remove();
     if (caja) caja.classList.remove('lectura-pendiente');
     if (!lim || !t) return false;
@@ -888,9 +891,15 @@
     f.classList.remove('sin-figura');
     for (var fs = topeLetra(19); fs >= 12; fs -= 0.5) {
       f.style.setProperty('--fs', fs + 'px');
-      if (panel.scrollHeight <= panel.clientHeight + 1) return;
+      if (panel.scrollHeight <= panel.clientHeight + holgura()) return;
       if (fs <= 14.5 && !f.classList.contains('sin-figura')) { f.classList.add('sin-figura'); fs = 17.5; }
     }
+  }
+  /* Fila de varios campos (datos.sinHuecos): la letra crece hasta 17 px y baja hasta caber en el panel; nunca desplazamiento. */
+  function encajarFilas(panel) {
+    var l = panel.querySelector('.tabla-filas');
+    if (!datos.sinHuecos || !l) return;
+    for (var fs = 17; fs >= 11.5; fs -= 0.5) { l.style.setProperty('--fs', fs + 'px'); if (panel.scrollHeight <= panel.clientHeight + holgura()) return; }
   }
   B.tabla.activar = function (b, k, el) {
     if (tablaBreve(b)) {
@@ -923,7 +932,7 @@
         var texto = panel.querySelector('.panel-texto');
         texto.classList.toggle('con-ficha', !!ficha);
         texto.innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p>' + lista;
-        if (ficha) encajarTabla(panel);
+        if (ficha) encajarTabla(panel); else encajarFilas(panel);
         reanimar(panel); marcar(f.dataset.id);
       });
     });
@@ -966,7 +975,7 @@
   /* El apartado abierto ocupa el espacio que dejan los demás; la letra crece si el texto es breve (hasta 22 px) y se reduce hasta que cabe: nunca desplazamiento. */
   function encajarPanel(p) {
     quitarRelleno(p);
-    for (var fs = topeLetra(22); fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + 1) break; }
+    for (var fs = topeLetra(22); fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + holgura()) break; }
     rellenar(p);
   }
   B.acordeon.activar = function (b, k, el) {
@@ -1154,7 +1163,9 @@
     });
     if (op.tipo !== 'meme') {
       var zona = caja.querySelector('.tr-texto');
-      if (!dosificar(zona, function () { encajarTarjeta(caja); })) encajarTarjeta(caja);
+      /* La tarjeta tiene menos alto que un panel: su retroalimentación se parte en tramos de 300 caracteres, para que
+         «Seguir leyendo» nunca quede cortado al fondo. */
+      if (!dosificar(zona, function () { encajarTarjeta(caja); }, datos.sinHuecos ? 300 : null)) encajarTarjeta(caja);
       var bt = caja.querySelector('.tr-boton');
       if (op.alBoton && faltaLeer(caja)) { candado(bt, true); caja.addEventListener('lectura-completa', function () { candado(bt, false); }); }
     }
