@@ -256,6 +256,7 @@
     if (vistos[id]) return;
     vistos[id] = true;
     raiz.querySelectorAll('[data-id="' + id + '"]').forEach(function (b) { b.classList.add('visto'); });
+    if (datos.sinHuecos) { ajustarExtractos(); encajarTarjetas(); }
     var n = Object.keys(vistos).length, barra = raiz.querySelector('.barra i');
     if (!barra) return;
     barra.style.width = (100 * n / total) + '%';
@@ -548,7 +549,8 @@
       if (!e.dataset.completo) e.dataset.completo = e.textContent;
       var base = e.dataset.completo, puntos = /…$/.test(base), palabras = base.replace(/…$/, '').split(/\s+/), lo = 0, hi = palabras.length;
       function poner(n) { e.textContent = palabras.slice(0, n).join(' ') + (n < palabras.length || puntos ? '…' : ''); }
-      function cabe() { return e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1; }
+      var caja = e.closest('.cara') || e.closest('button');
+      function cabe() { return e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1 && (!caja || caja.scrollHeight <= caja.clientHeight + 1); }
       e.style.display = ''; e.style.fontSize = ''; e.style.webkitLineClamp = '';
       poner(hi);
       /* Con datos.sinHuecos, el extracto completo crece (hasta 17 px) mientras quepa en su tarjeta: la tarjeta no queda medio
@@ -568,6 +570,24 @@
       while (lo < hi) { var m = Math.ceil((lo + hi) / 2); poner(m); if (cabe()) lo = m; else hi = m - 1; }
       if (lo < 3) { e.style.display = 'none'; return; }
       poner(lo);
+    });
+  }
+  /* Si la tarjeta aún no cabe (rótulo largo), primero se quita el dibujo de la cara y luego baja la letra del rótulo hasta
+     10 px: el rótulo nunca queda cortado. */
+  function encajarTarjetas() {
+    raiz.querySelectorAll('.giro .cara, .nodo-esquema').forEach(function (t) {
+      var r = t.querySelector('.giro-rotulo, .esquema-rotulo'), arte = t.querySelector('.giro-arte');
+      if (!r) return;
+      r.style.fontSize = ''; r.style.overflowWrap = ''; if (arte) arte.style.display = '';
+      /* Ancho útil de la tarjeta: una palabra larga («Responsabilización») no puede ser más ancha que ella. */
+      var cs = getComputedStyle(t), ancho = t.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      function cabe() { return t.scrollHeight <= t.clientHeight + 1 && r.scrollWidth <= ancho + 1; }
+      if (cabe()) return;
+      if (arte) { arte.style.display = 'none'; if (cabe()) return; }
+      for (var fs = parseFloat(getComputedStyle(r).fontSize) - 0.5; fs >= 10.5; fs -= 0.5) { r.style.fontSize = fs + 'px'; if (cabe()) return; }
+      /* Último recurso: la palabra se parte (con guion donde el navegador sabe hacerlo) antes que cortarse. */
+      r.style.overflowWrap = 'anywhere';
+      for (fs = 12; fs >= 10.5; fs -= 0.5) { r.style.fontSize = fs + 'px'; if (cabe()) return; }
     });
   }
   function extracto(s, lim) {
@@ -603,7 +623,8 @@
       '<div class="panel-texto"><p class="panel-vacio">' + mano + ' Elige una ficha para leer su contenido.</p></div></div>';
   };
   B.fichas.activar = function (b, k, el) {
-    var panel = el.querySelector('.panel-fichas');
+    var panel = el.querySelector('.panel-fichas'), reajuste = null;
+    window.addEventListener('resize', function () { if (reajuste) reajuste(); });
     el.querySelectorAll('.ficha').forEach(function (f) {
       f.addEventListener('click', function () {
         var i = Number(f.dataset.i), it = b.items[i];
@@ -613,6 +634,7 @@
         panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
         marcar(f.dataset.id);
         var pt = panel.querySelector('.panel-texto'), ajustar = grande ? function () { encajarTexto(panel, pt); } : null;
+        reajuste = ajustar;
         if (!dosificar(pt, ajustar) && ajustar) ajustar();
         reanimar(panel);
       });
@@ -804,7 +826,35 @@
   };
 
   /* Tabla de la fuente: una pestaña por columna o por grupo de filas; el panel muestra sus celdas con su encabezado. */
+  /* Tabla breve (Esteban, 28/10/2026, sobre los nueve artículos de U1-L3-E22: «siento que hay demasiado de artículos»): con
+     datos.sinHuecos, si cada fila es una sola celda y todo junto cabe a la vista (hasta 12 filas y 640 caracteres), la tabla se
+     muestra completa, con su encabezado, en vez de una pestaña por fila con un panel casi vacío. Nada que abrir de a una: no
+     cuenta en la exploración. */
+  function celdaTexto(c) { return c === null || c === undefined ? '' : typeof c === 'number' ? seg(c) : c; }
+  function tablaBreve(b) {
+    if (!datos.sinHuecos || !b || b.tipo !== 'tabla' || b.items.length < 3 || b.items.length > 12) return false;
+    if (!b.items.every(function (it) { return it.filas.length === 1 && it.filas[0].length === 1; })) return false;
+    return b.items.reduce(function (a, it) { return a + String(it.label).length + celdaTexto(it.filas[0][0][1]).length; }, 0) <= 640;
+  }
+  function tablaCompleta(b, k) {
+    var encs = b.items.map(function (it) { return celdaTexto(it.filas[0][0][0]); }), comun = encs.every(function (e) { return e === encs[0]; }) ? encs[0] : '';
+    var primera = b.titulo && b.titulo.length ? segs(b.titulo) : '';
+    return '<div class="tabla-breve-caja"><table class="tabla-breve">' +
+      (primera || comun ? '<thead><tr><th scope="col">' + esc(may(primera)) + '</th><th scope="col">' + esc(may(comun)) + '</th></tr></thead>' : '') +
+      '<tbody>' + b.items.map(function (it, i) {
+        return '<tr style="--d:' + (i * 0.05) + 's"><th scope="row">' + rot(it.label) + '</th><td>' + (comun ? '' : '<b class="tabla-enc">' + esc(may(encs[i])) + '</b> ') +
+          '<span class="lectura-texto">' + rico(celdaTexto(it.filas[0][0][1]) || '–') + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function encajarTablaBreve(el) {
+    var c = el.querySelector('.tabla-breve-caja');
+    if (!c) return;
+    quitarRelleno(c);
+    for (var fs = 21; fs >= 12; fs -= 0.5) { c.style.setProperty('--fs', fs + 'px'); if (c.scrollHeight <= c.clientHeight + 1) break; }
+    rellenar(c);
+  }
   B.tabla = function (b, k) {
+    if (tablaBreve(b)) return tablaCompleta(b, k);
     return tituloBloque(b, k) + '<div class="fichas tabla-pestanas" role="tablist">' + b.items.map(function (it, i) {
       return '<button type="button" role="tab" class="ficha' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' + rot(it.label) + '<span class="ficha-visto">' + visto + '</span></button>';
     }).join('') + '</div><div class="panel-fichas panel-tabla" role="tabpanel" tabindex="-1"><div class="panel-texto"></div></div>';
@@ -822,6 +872,12 @@
     }
   }
   B.tabla.activar = function (b, k, el) {
+    if (tablaBreve(b)) {
+      encajarTablaBreve(el);
+      if (document.fonts) document.fonts.ready.then(function () { encajarTablaBreve(el); });
+      window.addEventListener('resize', function () { encajarTablaBreve(el); });
+      return;
+    }
     var panel = el.querySelector('.panel-fichas');
     function celda(c) { return c === null || c === undefined ? '' : typeof c === 'number' ? seg(c) : c; }
     el.querySelectorAll('.ficha').forEach(function (f) {
@@ -1268,7 +1324,7 @@
   document.addEventListener('fullscreenchange', estadoPantalla);
   document.addEventListener('webkitfullscreenchange', estadoPantalla);
   window.addEventListener('resize', zoomPantalla);
-  window.addEventListener('resize', function () { ajustarExtractos(); });
+  window.addEventListener('resize', function () { ajustarExtractos(); encajarTarjetas(); });
 
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
@@ -1457,7 +1513,7 @@
   /* ---------- Escena ---------- */
   function render() {
     escena = datos.scenes[actual]; vistos = {}; retornoFoco = null; generacion++; ultimaLectura = null;
-    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
+    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : tablaBreve(b) ? 0 : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
     var ctx = escasa(escena) ? contexto(0) : null;
     var guia = ctx ? (ctx.lista.length > 1 ? 'Elige cada punto y lee su contenido junto a la ilustración.' : 'Lee el contenido junto a la ilustración.') : guias[escena.layout === 'balanza' ? 'fichas' : escena.layout];
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
@@ -1479,7 +1535,7 @@
     }).join('') + '</ul>';
     if (escena.tail.length) cuerpo += '<p class="caja-clave' + (conAvance ? ' tras-completar" hidden' : '"') + '><span class="clave-rotulo"><i class="fas fa-star" aria-hidden="true"></i> ' +
       (conAvance ? 'Idea clave desbloqueada' : 'Idea clave') + '</span>' + rico(segs(escena.tail)) + '</p>';
-    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '');
+    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '') + (datos.sinHuecos ? ' sin-huecos' : '');
     /* Ilustración de la escena en un lugar que varía (Estándares interamericanos; Esteban, 28/10/2026: «a la izquierda, a la
        derecha, en el medio o atrás… de forma embebida para que no sea invasivo»). «arte» = {img, pos}: «izq» o «der», una columna
        propia junto a la mediación; «fondo», la ilustración tenue en la esquina inferior, detrás y sin recibir clics; «centro», en
@@ -1509,8 +1565,10 @@
     raiz.querySelector('.lector').addEventListener('click', function (e) { if (e.target.classList.contains('lector')) cerrarLector(); });
     raiz.querySelector('.pantalla-completa').addEventListener('click', pantallaCompleta);
     estadoPantalla();
-    ajustarExtractos();
-    if (document.fonts) document.fonts.ready.then(ajustarExtractos);
+    ajustarExtractos(); encajarTarjetas();
+    /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
+       fuente de reserva podía quedar cortado. */
+    if (document.fonts) document.fonts.ready.then(function () { ajustarExtractos(); encajarTarjetas(); window.dispatchEvent(new Event('resize')); });
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;
