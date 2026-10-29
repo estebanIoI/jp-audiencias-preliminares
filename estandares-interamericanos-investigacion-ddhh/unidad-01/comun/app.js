@@ -256,7 +256,7 @@
     if (vistos[id]) return;
     vistos[id] = true;
     raiz.querySelectorAll('[data-id="' + id + '"]').forEach(function (b) { b.classList.add('visto'); });
-    if (datos.sinHuecos) { ajustarExtractos(); encajarTarjetas(); }
+    if (datos.sinHuecos) { encajarTarjetas(); ajustarExtractos(); }
     var n = Object.keys(vistos).length, barra = raiz.querySelector('.barra i');
     if (!barra) return;
     barra.style.width = (100 * n / total) + '%';
@@ -556,7 +556,7 @@
       /* Con datos.sinHuecos, el extracto completo crece (hasta 17 px) mientras quepa en su tarjeta: la tarjeta no queda medio
          vacía con letra pequeña («no dejar esos espacios en blanco»). */
       var tarjeta = e.closest('.cara') || e.closest('button');
-      if (datos.sinHuecos && tarjeta && cabe()) {
+      if (datos.sinHuecos && tarjeta && !e.classList.contains('giro-extracto') && cabe()) {
         var fs0 = parseFloat(getComputedStyle(e).fontSize), mejor = 0;
         e.style.webkitLineClamp = 'unset';
         for (var fs = 17; fs > fs0; fs -= 0.5) {
@@ -572,12 +572,33 @@
       poner(lo);
     });
   }
+  /* Giro en dos filas (Esteban, 28/10/2026, sobre las cinco tarjetas angostas de U1-L3-E28: «organizarla de una distinta
+     manera… para que no queden así esas líneas largas… agradable a la vista»): con datos.sinHuecos, si cada tarjeta quedaría de
+     menos de 150 px de ancho, van en dos filas (3 + 2 centradas, 2 + 2, 3 + 3), con el dibujo más pequeño. */
+  function organizarGiros() {
+    raiz.querySelectorAll('.giros').forEach(function (g) {
+      var n = g.children.length;
+      g.style.removeProperty('--c'); g.classList.remove('dos-filas');
+      if (!datos.sinHuecos || n < 4 || g.clientWidth / n >= 150) return;
+      g.classList.add('dos-filas');
+      g.style.setProperty('--c', String(Math.ceil(n / 2) * 2));
+    });
+  }
   /* Si la tarjeta aún no cabe (rótulo largo), primero se quita el dibujo de la cara y luego baja la letra del rótulo hasta
      10 px: el rótulo nunca queda cortado. */
   function encajarTarjetas() {
     raiz.querySelectorAll('.giro .cara, .nodo-esquema').forEach(function (t) {
-      var r = t.querySelector('.giro-rotulo, .esquema-rotulo'), arte = t.querySelector('.giro-arte');
+      var r = t.querySelector('.giro-rotulo, .esquema-rotulo'), arte = t.querySelector('.giro-arte'), ex = t.querySelector('.giro-extracto, .esquema-extracto');
       if (!r) return;
+      /* El rótulo y el dibujo se ajustan sin el extracto; luego ajustarExtractos() le da al extracto lo que queda. */
+      var antes = ex ? ex.style.display : null;
+      if (ex) ex.style.display = 'none';
+      encajarRotulo(t, r, arte);
+      if (ex) ex.style.display = antes;
+    });
+  }
+  function encajarRotulo(t, r, arte) {
+    (function () {
       r.style.fontSize = ''; r.style.overflowWrap = ''; if (arte) arte.style.display = '';
       /* Ancho útil de la tarjeta: una palabra larga («Responsabilización») no puede ser más ancha que ella. */
       var cs = getComputedStyle(t), ancho = t.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -588,7 +609,7 @@
       /* Último recurso: la palabra se parte (con guion donde el navegador sabe hacerlo) antes que cortarse. */
       r.style.overflowWrap = 'anywhere';
       for (fs = 12; fs >= 10.5; fs -= 0.5) { r.style.fontSize = fs + 'px'; if (cabe()) return; }
-    });
+    })();
   }
   function extracto(s, lim) {
     var t = String(s).replace(/\s*\n\s*/g, ' ').replace(/\[\^\d+\]/g, '').replace(/^• /, '').replace(/\*\*/g, '');
@@ -1324,7 +1345,7 @@
   document.addEventListener('fullscreenchange', estadoPantalla);
   document.addEventListener('webkitfullscreenchange', estadoPantalla);
   window.addEventListener('resize', zoomPantalla);
-  window.addEventListener('resize', function () { ajustarExtractos(); encajarTarjetas(); });
+  window.addEventListener('resize', function () { organizarGiros(); encajarTarjetas(); ajustarExtractos(); });
 
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
@@ -1565,10 +1586,10 @@
     raiz.querySelector('.lector').addEventListener('click', function (e) { if (e.target.classList.contains('lector')) cerrarLector(); });
     raiz.querySelector('.pantalla-completa').addEventListener('click', pantallaCompleta);
     estadoPantalla();
-    ajustarExtractos(); encajarTarjetas();
+    organizarGiros(); encajarTarjetas(); ajustarExtractos();
     /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
        fuente de reserva podía quedar cortado. */
-    if (document.fonts) document.fonts.ready.then(function () { ajustarExtractos(); encajarTarjetas(); window.dispatchEvent(new Event('resize')); });
+    if (document.fonts) document.fonts.ready.then(function () { window.dispatchEvent(new Event('resize')); });
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;

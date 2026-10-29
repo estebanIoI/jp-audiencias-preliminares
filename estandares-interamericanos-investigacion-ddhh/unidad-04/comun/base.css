@@ -882,3 +882,11 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
    solo texto, el arco gana ancho para que la imagen sea más grande. */
 .sin-huecos .ctx-arte{align-items:center}
 .sin-huecos .contexto.n1{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+/* Giro en dos filas (organizarGiros): rejilla de 2 × (columnas por fila); cada tarjeta ocupa dos, y la fila incompleta de
+   abajo queda centrada. */
+.giros.dos-filas{grid-auto-rows:minmax(0,1fr)}
+.giros.dos-filas .giro{grid-column:span 2}
+.giros.dos-filas.n5 .giro:nth-child(4){grid-column:2 / span 2}.giros.dos-filas.n5 .giro:nth-child(5){grid-column:4 / span 2}
+.giros.dos-filas .giro-int{min-height:0}
+.giros.dos-filas .frente .giro-arte .obj-svg{width:58px;height:auto}
+.giros.dos-filas .giro-rotulo{font-size:14px}
