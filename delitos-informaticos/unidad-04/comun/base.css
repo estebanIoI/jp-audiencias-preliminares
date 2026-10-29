@@ -677,6 +677,12 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .esquema-marca{margin-top:auto;display:inline-flex;gap:5px;align-items:center;padding:2px 10px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 10.5px Montserrat,Arial,sans-serif}
 .esquema-marca .fa-circle-check{display:none;color:var(--teal)}.nodo-esquema.visto .esquema-marca .fa-circle-check{display:inline}
 
+/* Raíz del mapa conceptual con la ilustración de la escena (datos.tituloFuera): el título queda en Genially. La imagen cabe
+   entera en su caja (ancha como la franja de antes, para no dejar huecos a los lados) sobre un óvalo claro. */
+.esquema-raiz.con-arte{height:31%;width:64%;max-width:none;margin-top:0;padding:0;border-radius:0;box-shadow:none;
+  background:radial-gradient(ellipse 34% 50% at 50% 50%,var(--hielo) 0 96%,transparent 98%)}
+.esquema-raiz.con-arte img{display:block;width:100%;height:100%;object-fit:contain;animation:aparece .6s ease both}
+
 /* Ruta de 6–7 pasos (Bienes 2.2, «los siguientes pasos»: siete): nodos más pequeños para que quepan en el marco. */
 .ruta.p6,.linea.p6{--n:6}.ruta.p7,.linea.p7{--n:7}
 .ruta.p6 .camino{left:8.3%;right:8.3%}.ruta.p7 .camino{left:7.2%;right:7.2%}
@@ -705,6 +711,12 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .pag-puntos{display:inline-flex;gap:5px}.pag-puntos i{width:8px;height:8px;border-radius:50%;background:var(--niebla);transition:background .2s}
 .pag-puntos i.activo{background:var(--teal)}
 .pag-estado{font:700 11px Montserrat,Arial,sans-serif;color:var(--marino);opacity:.8}
+/* En los paneles oscuros (fichas y tabla), «Seguir leyendo» y su posición en claro, con contraste sobre el panel. */
+.panel-fichas .lectura-paginas .pag-siguiente{background:var(--blanco);border-color:var(--blanco);color:var(--marino)}
+.panel-fichas .lectura-paginas .pag-anterior{background:transparent;border-color:var(--blanco);color:var(--blanco)}
+.panel-fichas .pag-estado{color:var(--blanco);opacity:.92}
+.panel-fichas .pag-puntos i{background:#FFFFFF59}.panel-fichas .pag-puntos i.activo{background:var(--blanco)}
+.tabla-filas li>.lectura-paginas{grid-column:1/-1;margin-top:2px}
 /* El texto breve se centra en la caja de la ruta y de la historia: sin franjas vacías bajo el párrafo. */
 .ruta-lectura .ruta-texto{display:flex;flex-direction:column;justify-content:center}
 

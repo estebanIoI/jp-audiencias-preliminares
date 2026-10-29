@@ -40,6 +40,12 @@ mark.ref-texto{background:#F7F4C7;box-shadow:inset 0 -2px 0 #84C6BC}
 .confeti i:nth-child(5n+1){background:#F7F4C7}
 @keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #07415C00}50%{box-shadow:0 0 0 6px #07415C33}}
 
+/* Sombras con el petróleo de la portada (el motor las trae en su verde por defecto, fuera de la paleta: qa_paleta). */
+.panel,.panel-fichas{box-shadow:0 8px 20px #07415C33}
+.avance.completo output{box-shadow:0 0 0 0 #07415C66}
+@keyframes brillo{0%{box-shadow:0 0 0 0 #07415C66}100%{box-shadow:0 0 0 12px #07415C00}}
+.caso-respuesta textarea:focus{box-shadow:0 0 0 3px #07415C22}
+
 /* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
 .ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
 

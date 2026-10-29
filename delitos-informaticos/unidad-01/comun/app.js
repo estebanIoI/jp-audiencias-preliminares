@@ -365,13 +365,15 @@
   }
   /* Cajas de varios párrafos (el caso de la «Actividad de aprendizaje») que no caben ni a 15 px: sus párrafos se reparten en
      partes con «Seguir leyendo», igual que dosificar(), sin recortar nada (Esteban, 28/10/2026: «que no aparezca letra así
-     cortada»). Si un párrafo solo no cabe, la letra baja hasta 13 px. Devuelve si hizo partes. */
+     cortada»). Si un párrafo solo no cabe, la letra baja hasta 13 px. «medida»: la caja de alto fijo que no debe desbordarse, si
+     no es la misma que reparte (las celdas de una fila de tabla dentro de su panel). Devuelve si hizo partes. */
   function quitarPartes(caja) {
     [].slice.call(caja.children).forEach(function (x) { if (x.classList.contains('lectura-paginas')) x.remove(); else x.classList.remove('parte-oculta'); });
     caja.classList.remove('lectura-pendiente');
   }
-  function partirBloques(caja) {
+  function partirBloques(caja, medida) {
     quitarPartes(caja);
+    medida = medida || caja;
     var unidades = [].slice.call(caja.children);
     if (unidades.length < 2) return false;
     var nav = document.createElement('div');
@@ -380,7 +382,7 @@
       '<span class="pag-puntos" aria-hidden="true"></span><span class="pag-estado" aria-live="polite">Parte 1 de 2</span>' +
       '<button type="button" class="pag-siguiente">Seguir leyendo <i class="fas fa-arrow-right" aria-hidden="true"></i></button>';
     caja.appendChild(nav);
-    function desborda() { return caja.scrollHeight > caja.clientHeight + 1; }
+    function desborda() { return medida.scrollHeight > medida.clientHeight + 1; }
     var paginas;
     for (var fs = 15; fs >= 13; fs -= 1) {
       caja.style.setProperty('--fs', fs + 'px');
@@ -960,6 +962,15 @@
         texto.classList.toggle('con-ficha', !!ficha);
         texto.innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p>' + lista;
         if (ficha) encajarTabla(panel); else { encajarFilas(panel); rellenar(panel); }   // varias filas breves: el tema debajo
+        /* Una fila que ni con la letra más pequeña cabe en el panel (U3-L1 de Delitos: cuatro columnas de texto largo) reparte sus
+           celdas en partes con «Seguir leyendo», sin la ilustración: nunca letra cortada ni desplazamiento. */
+        var li = panel.querySelector('.tabla-filas li');
+        if (li && li.children.length > 1 && !entra(panel)) {
+          var tf = panel.querySelector('.tabla-ficha');
+          if (tf) tf.classList.add('sin-figura');
+          quitarRelleno(panel);
+          partirBloques(li, panel);
+        }
         reanimar(panel); marcar(f.dataset.id);
       });
     });
@@ -1066,24 +1077,29 @@
     });
     return '<div class="mental n' + n + (conTexto ? ' con-extracto' : '') + '"><svg class="mental-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
       '<div class="mental-centro">' + (arteEn('centro') ? '<img class="mental-arte" src="' + srcImagen(escena.arte.img) + '" alt="">' : '<i class="fas fa-lightbulb" aria-hidden="true"></i>') +
-      '<span>' + esc(may(centroTitulo())) + '</span></div>' + nodos + '</div>';
+      (datos.tituloFuera ? '' : '<span>' + esc(may(centroTitulo())) + '</span>') + '</div>' + nodos + '</div>';
   };
   B.mental.activar = function (b, k, el) { abreLector(el, b); };
 
-  /* Mapa conceptual jerárquico: el concepto de la escena arriba y, unidos por conectores, sus elementos debajo. */
+  /* Mapa conceptual jerárquico: el concepto de la escena arriba y, unidos por conectores, sus elementos debajo. Con
+     datos.tituloFuera (Delitos informáticos; Esteban, 29/10/2026: el título de la escena «va en la plantilla de Genially… no
+     mezcles más la información»), la raíz no repite ese título: es la ilustración aprobada de la escena, y el título queda en
+     Genially, encima o al lado del HTML. */
   B.esquema = function (b, k) {
     var n = b.items.length, xs = b.items.map(function (_, i) { return (i + 0.5) * 100 / n; });
-    var lineas = '<line x1="50" y1="21" x2="50" y2="31"/>' + (n > 1 ? '<line x1="' + xs[0] + '" y1="31" x2="' + xs[n - 1] + '" y2="31"/>' : '') +
-      xs.map(function (x) { return '<line x1="' + x + '" y1="31" x2="' + x + '" y2="40"/>'; }).join('');
+    var arte = !!(datos.tituloFuera && datos.ilustraciones && escena.ilustracion), y = arte ? [31, 36, 41] : [21, 31, 40];
+    var lineas = '<line x1="50" y1="' + y[0] + '" x2="50" y2="' + y[1] + '"/>' + (n > 1 ? '<line x1="' + xs[0] + '" y1="' + y[1] + '" x2="' + xs[n - 1] + '" y2="' + y[1] + '"/>' : '') +
+      xs.map(function (x) { return '<line x1="' + x + '" y1="' + y[1] + '" x2="' + x + '" y2="' + y[2] + '"/>'; }).join('');
+    var cabeza = arte ? '<div class="esquema-raiz con-arte" aria-hidden="true"><img src="' + srcImagen(escena.ilustracion) + '" alt=""></div>'
+      : '<div class="esquema-raiz"><span>' + esc(may(centroTitulo())) + '</span></div>';
     return '<div class="esquema n' + n + '"><svg class="esquema-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
-      '<div class="esquema-raiz"><span>' + esc(may(centroTitulo())) + '</span></div><div class="esquema-hijos">' + b.items.map(function (it, i) {
+      cabeza + '<div class="esquema-hijos">' + b.items.map(function (it, i) {
         return '<button type="button" class="nodo-esquema' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.3 + i * 0.08) + 's">' +
           '<span class="esquema-arte">' + svgObjeto(it.obj, 46) + '</span><span class="esquema-rotulo">' + rot(it.label) + '</span>' +
           '<span class="esquema-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : n <= 3 ? 170 : 105))) + '</span><span class="esquema-marca">' + mano + ' Ver más' + visto + '</span></button>';
       }).join('') + '</div></div>';
   };
   B.esquema.activar = function (b, k, el) { abreLector(el, b); };
-
   /* Comparador (contenido que contrasta figuras: «a diferencia de…», «buena fe simple y… exenta de culpa», «frente al
      comiso»): columnas lado a lado; la que se toca se ensancha con su texto completo y las demás se compactan. Usa los
      estilos .columnas del motor. */
@@ -1627,7 +1643,8 @@
        el nodo central del mapa mental. En las mediaciones que ya muestran la ilustración (texto con ilustración, fichas), «izq»
        la pasa a la izquierda del texto. Sin «arte», la escena queda como antes. */
     var claseArte = '';
-    if (arteEn('izq') || arteEn('der')) {
+    if (datos.tituloFuera && escena.layout === 'esquema') { /* la ilustración es la raíz del mapa conceptual */ }
+    else if (arteEn('izq') || arteEn('der')) {
       if (IMAGEN[actual]) claseArte = ' arte-volteado';
       else {
         cuerpo = '<figure class="arte-escena" aria-hidden="true"><img src="' + srcImagen(escena.arte.img) + '" alt=""></figure><div class="escenario-contenido">' + cuerpo + '</div>';
