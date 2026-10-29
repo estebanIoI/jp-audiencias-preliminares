@@ -1,0 +1,47 @@
+/* Delitos informáticos · colores de la PORTADA de la maqueta de Genially del curso
+   Leídos con geniallyAPI el 29/10/2026 en «PORTADA» de «Unidad 1 - DELITOS INFORMATICOS» (AGENTS.md, paleta del curso;
+   Esteban: la portada es el modelo aprobado para todas las creaciones, «y su paleta de colores también»):
+     menta #84C6BC (fondo)              crema #F7F4C7 (panel derecho e «informáticos»)
+     petróleo #07415C («Delitos», «Curso», «Comenzar»: color principal del tema)
+     marco #083F59 (marco de la ilustración)   franja #1F5E6F (franja inferior)   blanco
+   Los claros son tintes de esos colores. Contraste: menta y crema van en fondos, bordes, barras y en letra sobre petróleo;
+   nunca en letra pequeña sobre blanco ni bajo texto blanco. Se carga después de base.css y solo cambia colores (y el marco). */
+:root{
+  --teal:#1F5E6F;--marino:#07415C;--oxido:#07415C;--coral:#84C6BC;--crema:#F7F4C7;--niebla:#C2E3DE;
+  --hielo:#E6F4F2;--fondo:#FBFAE3;--piso:#C2E3DE;--tinta:#07415C;--clave-fondo:#F7F4C7;--clave-borde:#1F5E6F
+}
+/* El HTML con el marco oscuro de la ilustración de la portada. */
+.ova{border-color:#083F59;box-shadow:0 6px 18px #07415C1f}
+
+/* Sobre los paneles petróleo y franja, los rótulos claros van en crema. */
+.panel .lectura-eyebrow,.panel-texto .lectura-eyebrow,.tabla-enc,.panel .panel-vacio i,.panel-fichas .panel-vacio i,.chips li i{color:var(--crema)}
+
+/* Tarjetas y columnas: tintes de la portada (menta, crema, petróleo claro y blanco). */
+.giro:nth-child(4n+2) .frente{background:#84C6BC40;border-color:#84C6BC;box-shadow:0 5px 0 #84C6BC}
+.giro:nth-child(4n+3) .frente{background:#F7F4C7;border-color:#1F5E6F66;box-shadow:0 5px 0 #1F5E6F66}
+.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#07415C55;box-shadow:0 5px 0 #07415C55}
+.columna.tono1{background:#84C6BC40;border-color:#84C6BC;box-shadow:0 6px 0 #84C6BC}
+.columna.tono2{background:#F7F4C7;border-color:#1F5E6F66;box-shadow:0 6px 0 #1F5E6F66}
+.columna.tono3{background:#FFFFFF;border-color:#07415C55;box-shadow:0 6px 0 #07415C55}
+
+/* Fondos de lámina y mapa, caminos y líneas: del menta claro al crema de la portada. */
+.lamina{background:linear-gradient(180deg,#E6F4F2 0%,#FBFAE3 75%)}
+.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FBFAE3 40%,#E6F4F2 78%)}
+.camino,.linea .camino{border-top-color:#84C6BC}
+.mapa-lineas line{stroke:#84C6BC}
+
+/* Emparejar, notas, casos y referencias. */
+.def{border-color:#84C6BC}
+.def.acierto,.caso-tarea.visto{background:#E6F4F2}
+.def.sobre{background:#07415C14}
+.empareja.amplio .def-ranura{border-color:#84C6BC;background:#FFFFFF}
+.nota-pie{color:var(--tinta)}
+mark.ref-texto{background:#F7F4C7;box-shadow:inset 0 -2px 0 #84C6BC}
+.confeti i:nth-child(5n+1){background:#F7F4C7}
+@keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #07415C00}50%{box-shadow:0 0 0 6px #07415C33}}
+
+/* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
+.ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
+
+/* Caja clave de Juan con los colores del curso: fondo crema de la portada y borde de la franja. */
+.caja-clave{background:var(--clave-fondo);border-color:var(--clave-borde)}
