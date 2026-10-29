@@ -134,6 +134,23 @@
   /* Holgura del encaje: con datos.sinHuecos se deja 4 px libres, porque otro navegador dibuja la misma fuente 1–3 px más alta y
      el panel abriría una barra de desplazamiento. */
   function holgura() { return datos.sinHuecos ? -3 : 1; }
+  /* ¿Cabe el contenido de la caja? Sin desplazamiento y, con datos.sinHuecos, con el texto terminando al menos 3 px antes de su
+     borde de abajo. scrollHeight nunca baja de clientHeight: con la holgura negativa, «scrollHeight <= clientHeight − 3» no se
+     cumplía nunca y la letra bajaba siempre al mínimo, con un hueco debajo (Esteban, 28/10/2026, U1-L1-E04: «ese espacio
+     debajo… tiene que ser rellenado»). Sin datos.sinHuecos, la misma prueba de antes. */
+  function entra(caja) {
+    if (caja.scrollHeight > caja.clientHeight + 1) return false;
+    if (holgura() >= 0) return true;
+    var cs = getComputedStyle(caja), r = caja.getBoundingClientRect(), e = caja.offsetHeight ? r.height / caja.offsetHeight : 1;
+    var fondo = r.bottom - (parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth)) * e, fin = -Infinity;
+    var w = document.createTreeWalker(caja, NodeFilter.SHOW_TEXT), n, rg = document.createRange(), q;
+    while ((n = w.nextNode())) {
+      if (!n.textContent.trim() || !n.parentElement || !n.parentElement.getClientRects().length) continue;
+      rg.selectNodeContents(n); q = rg.getBoundingClientRect();
+      if (q.height > 0) fin = Math.max(fin, q.bottom);
+    }
+    return fin <= fondo + holgura() * e;
+  }
   function alturaContenido(caja) {
     var arriba = Infinity, abajo = -Infinity, w = document.createTreeWalker(caja, NodeFilter.SHOW_TEXT), n, r = document.createRange();
     function sumar(b) { if (b.width > 0 && b.height > 0) { arriba = Math.min(arriba, b.top); abajo = Math.max(abajo, b.bottom); } }
@@ -851,12 +868,13 @@
 
   /* Tabla de la fuente: una pestaña por columna o por grupo de filas; el panel muestra sus celdas con su encabezado. */
   /* Tabla breve (Esteban, 28/10/2026, sobre los nueve artículos de U1-L3-E22: «siento que hay demasiado de artículos»): con
-     datos.sinHuecos, si cada fila es una sola celda y todo junto cabe a la vista (hasta 12 filas y 640 caracteres), la tabla se
+     datos.sinHuecos, si cada fila es una sola celda y todo junto cabe a la vista (de 2 a 12 filas y 640 caracteres), la tabla se
      muestra completa, con su encabezado, en vez de una pestaña por fila con un panel casi vacío. Nada que abrir de a una: no
-     cuenta en la exploración. */
+     cuenta en la exploración. Desde 2 filas (Esteban, 28/10/2026, sobre U1-L1-E04, «Respetar» y «Garantizar»: «ese espacio
+     debajo… tiene que ser rellenado acorde con lo del contenido»); debajo entra la ilustración de relleno del tema. */
   function celdaTexto(c) { return c === null || c === undefined ? '' : typeof c === 'number' ? seg(c) : c; }
   function tablaBreve(b) {
-    if (!datos.sinHuecos || !b || b.tipo !== 'tabla' || b.items.length < 3 || b.items.length > 12) return false;
+    if (!datos.sinHuecos || !b || b.tipo !== 'tabla' || b.items.length < 2 || b.items.length > 12) return false;
     if (!b.items.every(function (it) { return it.filas.length === 1 && it.filas[0].length === 1; })) return false;
     return b.items.reduce(function (a, it) { return a + String(it.label).length + celdaTexto(it.filas[0][0][1]).length; }, 0) <= 640;
   }
@@ -889,17 +907,24 @@
     var f = panel.querySelector('.tabla-ficha');
     if (!f) return;
     f.classList.remove('sin-figura');
-    for (var fs = topeLetra(19); fs >= 12; fs -= 0.5) {
-      f.style.setProperty('--fs', fs + 'px');
-      if (panel.scrollHeight <= panel.clientHeight + holgura()) return;
-      if (fs <= 14.5 && !f.classList.contains('sin-figura')) { f.classList.add('sin-figura'); fs = 17.5; }
+    function encajar() {
+      for (var fs = topeLetra(19); fs >= 12; fs -= 0.5) {
+        f.style.setProperty('--fs', fs + 'px');
+        if (entra(panel)) return;
+        if (fs <= 14.5 && !f.classList.contains('sin-figura')) { f.classList.add('sin-figura'); fs = 17.5; }
+      }
     }
+    encajar();
+    /* La ilustración apilada a la que la letra grande deja menos de 100 px sale (diminuta parece un error) y la letra vuelve
+       a encajar sin ella. */
+    var fig = f.classList.contains('apilada') && !f.classList.contains('sin-figura') && f.querySelector('.relleno-arte');
+    if (fig && fig.getBoundingClientRect().height < 100) { f.classList.add('sin-figura'); encajar(); }
   }
   /* Fila de varios campos (datos.sinHuecos): la letra crece hasta 17 px y baja hasta caber en el panel; nunca desplazamiento. */
   function encajarFilas(panel) {
     var l = panel.querySelector('.tabla-filas');
     if (!datos.sinHuecos || !l) return;
-    for (var fs = 17; fs >= 11.5; fs -= 0.5) { l.style.setProperty('--fs', fs + 'px'); if (panel.scrollHeight <= panel.clientHeight + holgura()) return; }
+    for (var fs = 17; fs >= 11.5; fs -= 0.5) { l.style.setProperty('--fs', fs + 'px'); if (entra(panel)) return; }
   }
   B.tabla.activar = function (b, k, el) {
     if (tablaBreve(b)) {
@@ -920,11 +945,13 @@
             return '<span class="tabla-celda">' + (enc ? '<b class="tabla-enc">' + esc(enc) + '</b>' : '') + '<span class="lectura-texto">' + rico(val || '–') + '</span></span>';
           }).join('') + '</li>';
         }).join('') + '</ul>';
-        /* Tabla comparativa con una fila por pestaña (Bienes 1.3): sus celdas en grande junto al objeto, sin franja vacía. */
-        var ficha = it.filas.length === 1 && it.obj;
         /* Con datos.sinHuecos, la figura es la ilustración de relleno de la escena, del tema del texto (Esteban, 28/10/2026:
            «tener algo relacionado al tema»), en vez del objeto genérico. */
         var conImg = datos.sinHuecos && datos.ilustraciones && escena.relleno;
+        /* Tabla comparativa con una fila por pestaña (Bienes 1.3): sus celdas en grande junto al objeto, sin franja vacía. Con la
+           ilustración de relleno, también la fila sin objeto. */
+        var ficha = it.filas.length === 1 && (it.obj || conImg);
+        quitarRelleno(panel);
         /* Apilada: la celda arriba, con letra grande, y la ilustración del tema llenando el resto del panel (sin franjas vacías
            arriba y abajo de una celda breve centrada). */
         if (ficha) lista = conImg ? '<div class="tabla-ficha apilada">' + lista + '<figure class="relleno-arte" aria-hidden="true"><img src="' + srcImagen(escena.relleno) + '" alt=""></figure></div>'
@@ -932,7 +959,7 @@
         var texto = panel.querySelector('.panel-texto');
         texto.classList.toggle('con-ficha', !!ficha);
         texto.innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p>' + lista;
-        if (ficha) encajarTabla(panel); else encajarFilas(panel);
+        if (ficha) encajarTabla(panel); else { encajarFilas(panel); rellenar(panel); }   // varias filas breves: el tema debajo
         reanimar(panel); marcar(f.dataset.id);
       });
     });
@@ -975,13 +1002,17 @@
   /* El apartado abierto ocupa el espacio que dejan los demás; la letra crece si el texto es breve (hasta 22 px) y se reduce hasta que cabe: nunca desplazamiento. */
   function encajarPanel(p) {
     quitarRelleno(p);
-    for (var fs = topeLetra(22); fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + holgura()) break; }
+    for (var fs = topeLetra(22); fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (entra(p)) break; }
     rellenar(p);
   }
   B.acordeon.activar = function (b, k, el) {
     var cabs = el.querySelectorAll('.acordeon-cab');
     function abrir(c) {
-      cabs.forEach(function (o) { var si = o === c; o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si); });
+      cabs.forEach(function (o) {
+        var si = o === c;
+        if (!si) quitarRelleno(o.nextElementSibling);   // el que se cierra suelta su ilustración: con ella seguía a la vista
+        o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si);
+      });
       var p = c.nextElementSibling;
       if (!dosificar(p, function () { encajarPanel(p); })) encajarPanel(p);
       reanimar(p); marcar(c.dataset.id);
@@ -1073,6 +1104,7 @@
         var si = j === i, lec = o.querySelector('.col-lectura');
         o.classList.toggle('abierta', si);
         o.querySelector('.col-boton').setAttribute('aria-expanded', String(si));
+        if (!si) quitarRelleno(lec);   // la columna que se cierra no guarda la ilustración de relleno de cuando estuvo abierta
         lec.hidden = !si;
         lec.innerHTML = si ? '<p class="lectura-texto">' + rico(segs(b.items[j].segs)) + '</p>' : '';
       });
@@ -1102,6 +1134,20 @@
       return segs(l.segs);
     }).join('\n');
   }
+  /* En la hoja de la actividad (introducción, situación, cierre), con datos.sinHuecos, los rótulos breves seguidos («Actividad
+     inicial», «Pregunta») van en una sola línea separados por « · », en el orden de la ficha: uno bajo otro dejaban una franja
+     vacía a su derecha (U3-L3-E05, U5-L1-E03). */
+  function lineasHoja(ls) {
+    if (!datos.sinHuecos) return textoLineas(ls);
+    var out = [], rot = [];
+    ls.forEach(function (l) {
+      if (l.tipo === 'rot' && segs(l.segs).length <= 60) { rot.push(segs(l.segs)); return; }
+      if (rot.length) { out.push(rot.join(' · ')); rot = []; }
+      out.push(textoLineas([l]));
+    });
+    if (rot.length) out.push(rot.join(' · '));
+    return out.join('\n');
+  }
   /* ---------- Tarjeta de retroalimentación con memes (Estándares interamericanos; Esteban, 28/10/2026, tras la reunión con Juan:
      «cuando le dé una opción que es incorrecta le aparezca la imagen y le dé como para volver… si le da otra incorrecta le vuelve
      a aparecer otra imagen según el meme… y solo cuando elige la correcta ya lo deja avanzar a la siguiente pregunta») ----------
@@ -1115,7 +1161,8 @@
   function encajarTarjeta(caja) {
     var zona = caja.querySelector('.tr-texto'), t = zona && zona.querySelector('.lectura-texto');
     if (!t) return;
-    for (var fs = 17; fs >= 11.5; fs -= 0.5) {
+    /* Con datos.sinHuecos, la retroalimentación breve crece hasta 24 px y llena su zona (sin franja vacía sobre el botón). */
+    for (var fs = datos.sinHuecos ? 24 : 17; fs >= 11.5; fs -= 0.5) {
       t.style.fontSize = fs + 'px';
       if (zona.scrollHeight <= zona.clientHeight + 1 && caja.scrollHeight <= caja.clientHeight + 1) return;
     }
@@ -1136,7 +1183,10 @@
       var globo = bien ? ['¡Muy bien!', '¡Eso es!', '¡Así es!'][n % 3] : RR.frases[n % RR.frases.length];
       var titulo = bien ? '¡Respuesta <b>correcta!</b>' : op.clasifica ? '¿Esa <b>categoría?</b>' : '¿La opción <b>' + esc(op.letra) + '?</b>';
       var sub = bien ? (op.texto ? 'Así lo explica la ficha:' : '¡Muy bien!') : op.clasifica ? '¡Esa no es la clasificación!' : '¡No es la respuesta! Revisa por qué:';
-      var texto = op.texto || (op.clasifica ? 'Esta afirmación no corresponde a esa categoría. Vuelve a leerla e inténtalo de nuevo.'
+      /* Sin texto de la ficha: el acierto nombra la categoría elegida; nunca muestra el aviso de error (antes, «¡Respuesta
+         correcta!» con «Esta afirmación no corresponde a esa categoría…», en las clasificaciones de U5). */
+      var texto = op.texto || (bien ? (op.categoria ? 'Esta afirmación corresponde a la categoría «' + op.categoria + '».' : '')
+        : op.clasifica ? 'Esta afirmación no corresponde a esa categoría. Vuelve a leerla e inténtalo de nuevo.'
         : 'Vuelve a leer la pregunta e inténtalo de nuevo.');
       html = '<div class="lector-caja tarjeta-retro ' + (bien ? 'bien' : 'mal') + '" role="dialog" aria-modal="true" aria-label="' +
         (bien ? 'Respuesta correcta' : 'Respuesta incorrecta') + '" tabindex="-1">' +
@@ -1188,7 +1238,7 @@
         var ls = p === 'intro' ? b.intro : p === 'cierre' ? b.cierre : b.preguntas[Number(p.slice(1))].contexto;
         var rotulo = p === 'intro' ? 'Actividad' : p === 'cierre' ? 'Para cerrar la actividad' : 'Antes de la pregunta ' + (Number(p.slice(1)) + 1);
         cuerpo = '<div class="act-hoja act-encaja"><p class="act-eyebrow"><i class="fas ' + (p === 'cierre' ? 'fa-flag-checkered' : p === 'intro' ? 'fa-puzzle-piece' : 'fa-folder-open') + '" aria-hidden="true"></i> ' +
-          rotulo + '</p><p class="lectura-texto">' + rico(textoLineas(ls)) + '</p></div>' +
+          rotulo + '</p><p class="lectura-texto">' + rico(lineasHoja(ls)) + '</p></div>' +
           '<figure class="act-figura" aria-hidden="true">' + (datos.ilustraciones && escena.ilustracion ? '<img src="' + srcImagen(escena.ilustracion) + '" alt="">'
             : svgObjeto(p === 'cierre' ? 'libros' : p === 'intro' ? 'expediente' : 'documento', 150)) + '</figure>';
       } else {
@@ -1278,14 +1328,15 @@
         var fuente = (q.fuente || []).length ? '\n' + segs(q.fuente) : '';
         var clave = q.respuesta !== null && q.respuesta !== undefined ? seg(q.respuesta) : '';
         var chip = R ? R.rotulo + ' · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1) : '';
+        var categoria = b.modo === 'clasifica' ? (op.seg !== undefined && op.seg !== null ? sinMarca(seg(op.seg)) : op.texto || '') : '';
         /* En el orden de la ficha: «Retroalimentación automática», la de la opción, la general y «Respuesta correcta: …». */
         var textoBien = [cabRetro, propia.trim(), retroGeneral, clave].filter(Boolean).join('\n') + fuente;
         var textoMal = ((propia.trim() || general) + fuente).trim();
         if (resueltas[i]) {
           /* Repaso: cada opción abre su propia retroalimentación. */
           var t = op.ok ? textoBien : textoMal;
-          if (R && (t.trim() || op.meme)) tarjeta({ tipo: op.ok ? 'bien' : op.meme ? 'meme' : 'mal', idx: op.ok ? aciertos : intentos, meme: op.meme, chip: chip,
-            letra: op.letra, texto: t, boton: 'Volver a la pregunta', desde: o, clasifica: b.modo === 'clasifica' });
+          if (R && (t.trim() || op.meme || (op.ok && categoria))) tarjeta({ tipo: op.ok ? 'bien' : op.meme ? 'meme' : 'mal', idx: op.ok ? aciertos : intentos, meme: op.meme, chip: chip,
+            letra: op.letra, texto: t, boton: 'Volver a la pregunta', desde: o, clasifica: b.modo === 'clasifica', categoria: categoria });
           else if (t.trim()) leer((op.ok ? 'Respuesta correcta · ' : 'Repaso · ') + 'opción ' + op.letra, t, null, o);
           return;
         }
@@ -1301,7 +1352,7 @@
           estado();
           /* Solo la respuesta correcta deja avanzar: su tarjeta lleva el botón a la página siguiente. */
           if (R) tarjeta({ tipo: 'bien', idx: aciertos++, chip: chip, letra: op.letra, texto: textoBien, desde: o, clasifica: b.modo === 'clasifica',
-            boton: rotuloSiguiente(), alBoton: function () { if (pos < pags.length - 1) ir(pos + 1); } });
+            categoria: categoria, boton: rotuloSiguiente(), alBoton: function () { if (pos < pags.length - 1) ir(pos + 1); } });
           else if (textoBien.trim()) leer('¡Correcto! · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1), textoBien, null, o);
         } else {
           o.classList.remove('error'); void o.offsetWidth; o.classList.add('error', 'intentada');
@@ -1548,6 +1599,8 @@
     total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : tablaBreve(b) ? 0 : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
     var ctx = escasa(escena) ? contexto(0) : null;
     var guia = ctx ? (ctx.lista.length > 1 ? 'Elige cada punto y lee su contenido junto a la ilustración.' : 'Lee el contenido junto a la ilustración.') : guias[escena.layout === 'balanza' ? 'fichas' : escena.layout];
+    /* La tabla breve se ve completa: no hay pestañas que elegir. */
+    if (escena.layout === 'tabla' && escena.bloques.length && escena.bloques.every(tablaBreve)) guia = 'Lee la tabla completa.';
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
     var conAvance = total > 0 && !(ctx && ctx.lista.length === 1);
     var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span>' + guia + '</span></p>' +

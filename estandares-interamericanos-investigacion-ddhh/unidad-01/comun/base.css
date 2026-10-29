@@ -859,6 +859,7 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 
 /* Sin espacios en blanco (datos.sinHuecos; Esteban, 28/10/2026): la ilustración de relleno ocupa el espacio libre bajo el texto. */
 .con-relleno{display:flex!important;flex-direction:column!important;justify-content:flex-start!important}
+.con-relleno[hidden]{display:none!important}   /* un panel cerrado con relleno no queda a la vista (acordeón, columna) */
 .relleno-arte{flex:1 1 0;min-height:0;margin:8px 0 0;display:flex;align-items:center;justify-content:center;animation:aparece .45s ease both}
 /* La imagen toma exactamente la caja que le deja el texto: nunca se sale ni se recorta (ninguna cabeza cortada). */
 .relleno-arte{position:relative}.relleno-arte img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
@@ -892,3 +893,21 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .giros.dos-filas .giro-rotulo{font-size:14px}
 .sin-huecos .panel-tabla .tabla-filas:not(.compacta) .lectura-texto{font-size:var(--fs,15px);line-height:1.45}
 .sin-huecos .panel-tabla .tabla-filas:not(.compacta) .tabla-enc{font-size:max(11px,calc(var(--fs,15px) * .72))}
+/* Ningún hueco (Esteban, 28/10/2026, U1-L1-E04: «todos esos espacios tienen que ser cubiertos… acorde con lo del contenido»):
+   - la lista compacta de dos columnas también crece con encajarFilas;
+   - las pestañas de una fila incompleta se estiran hasta el borde, sin franja vacía a su derecha;
+   - la columna cerrada del comparador muestra su dibujo y «Comparar», no un recuadro blanco vacío;
+   - la raíz de un esquema con título corto («Introducción») es una franja ancha, sin vacíos a sus lados;
+   - la retroalimentación breve de la tarjeta se centra entre el subtítulo y el botón. */
+.sin-huecos .panel-tabla .tabla-filas.compacta .lectura-texto{font-size:max(12.4px,calc(var(--fs,15px) * .9));line-height:1.35}
+.sin-huecos .fichas .ficha{flex:1 1 auto;justify-content:flex-start}
+.sin-huecos .columna:not(.abierta) .col-lectura[hidden]{display:none}
+.sin-huecos .columnas.con-abierta .columna:not(.abierta) .col-arte{display:flex;flex:1;min-height:0;align-items:center;justify-content:center}
+.sin-huecos .columnas.con-abierta .columna:not(.abierta) .col-arte .obj-svg{width:min(100%,104px);height:auto}
+.sin-huecos .columnas.con-abierta .columna:not(.abierta) .col-toca{display:inline-flex;align-self:center}
+.sin-huecos .esquema-raiz{min-width:64%}
+.sin-huecos .tarjeta-retro .tr-texto{justify-content:safe center}
+/* El texto que ya creció hasta su tope y no deja sitio para la ilustración se centra en su caja: el aire que sobra queda
+   repartido arriba y abajo, no en una franja bajo la última línea (acordeón, columna abierta, fila apilada sin figura). */
+.sin-huecos .acordeon-panel:not([hidden]):not(.con-relleno),.sin-huecos .columna.abierta .col-lectura:not(.con-relleno){display:flex;flex-direction:column;justify-content:safe center}
+.sin-huecos .tabla-ficha.apilada.sin-figura{justify-content:safe center}
