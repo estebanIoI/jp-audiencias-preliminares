@@ -1,0 +1,36 @@
+/* Estándares interamericanos · colores de la PORTADA de la maqueta de Genially del curso
+   Leídos con geniallyAPI el 28/10/2026 en «COVER» de «Unidad 1 - Estándares interamericanos» (AGENTS.md, paleta del curso):
+     menta #C5E4DF (fondo)          naranja #FF6936 (título «Estándares interamericanos»)   azul verdoso #1F6074 (subtítulo)
+     verde azulado #036479 («Curso»)   petróleo #07415C («Comenzar»)   óxido #893016 (sombra del recuadro)
+     salmón #F19D85 (menú)           blanco
+   Los claros son tintes de esos colores. Contraste: el naranja y el salmón van en bordes, barras, sombras y fondos, nunca en
+   letra pequeña ni bajo texto blanco; los rótulos pequeños van en petróleo u óxido. Se carga después de base.css y solo cambia
+   colores (y quita la sombra borrosa de las ilustraciones). */
+:root{
+  --teal:#036479;--marino:#07415C;--oxido:#893016;--coral:#F19D85;--crema:#FCE6DF;--niebla:#C5E4DF;
+  --hielo:#E8F4F2;--fondo:#FFFFFF;--piso:#C5E4DF;--tinta:#07415C;--clave-fondo:#FCE6DF;--clave-borde:#FF6936
+}
+.ova{border-color:#C5E4DF;box-shadow:0 6px 18px #07415C1f}
+
+/* Sobre los paneles verde azulado, los rótulos claros van en menta. */
+.panel .lectura-eyebrow,.panel-texto .lectura-eyebrow,.tabla-enc,.panel .panel-vacio i,.panel-fichas .panel-vacio i,.chips li i{color:#C5E4DF}
+
+/* Tarjetas y columnas: tintes de la portada (menta, salmón, petróleo claro y blanco). */
+.giro:nth-child(4n+2) .frente{background:#C5E4DF66;border-color:#036479;box-shadow:0 5px 0 #036479}
+.giro:nth-child(4n+3) .frente{background:#FCE6DF;border-color:#F19D85;box-shadow:0 5px 0 #F19D85}
+.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#1F606455;box-shadow:0 5px 0 #1F606455}
+.columna.tono1{background:#C5E4DF66;border-color:#036479;box-shadow:0 6px 0 #036479}
+.columna.tono2{background:#FCE6DF;border-color:#F19D85;box-shadow:0 6px 0 #F19D85}
+.columna.tono3{background:#FFFFFF;border-color:#1F606455;box-shadow:0 6px 0 #1F606455}
+
+/* Fondos de lámina y mapa, caminos y líneas. */
+.lamina{background:linear-gradient(180deg,#E8F4F2 0%,#FFFFFF 75%)}
+.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FFFFFF 40%,#E8F4F2 78%)}
+.camino,.linea .camino{border-top-color:#F19D85}
+.mapa-lineas line{stroke:#F19D85}
+
+/* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
+.ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
+
+/* Caja clave de Juan con los colores del curso: fondo salmón claro y borde naranja. */
+.caja-clave{background:var(--clave-fondo);border-color:var(--clave-borde)}
