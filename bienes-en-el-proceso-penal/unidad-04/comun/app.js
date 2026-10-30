@@ -95,13 +95,28 @@
   }
   function linea(t) {
     var nota = /^\[\^(\d+)\]\s*/.exec(t), cuerpo = may(nota ? t.slice(nota[0].length) : t);
-    if (nota) return '<span class="parr nota-pie"><sup>' + nota[1] + '</sup> ' + marcado(cuerpo) + '</span>';
+    /* La nota al pie también descansa en tramos (la nota del artículo 534 en Ley 1826 L3 era un bloque de 1 500 caracteres
+       que ni la lectura por partes podía repartir; pulido del 29/10/2026): la llamada va en el primero. */
+    if (nota) return tramos(cuerpo).map(function (x, i) {
+      return '<span class="parr nota-pie' + (i ? ' tramo' : '') + '">' + (i ? '' : '<sup>' + nota[1] + '</sup> ') + marcado(x) + '</span>';
+    }).join('');
     var vin = /^• /.test(t);
     return tramos(cuerpo).map(function (x, i) {
       return '<span class="parr' + (vin ? (i ? ' tramo vineta-sigue' : ' vineta') : i ? ' tramo' : '') + '">' + marcado(x) + '</span>';
     }).join('');
   }
-  function rico(s) { return String(s).split('\n').map(linea).join(''); }
+  /* Cuatro o más viñetas breves seguidas (los porcentajes del artículo 91 en Bienes) van en dos columnas: una por renglón
+     dejaba vacía la mitad derecha de la lectura (QA del pulido, 29/10/2026). El texto no cambia. */
+  function rico(s) {
+    var lineas = String(s).split('\n'), out = [], k = 0;
+    while (k < lineas.length) {
+      var j = k;
+      while (j < lineas.length && /^• /.test(lineas[j]) && lineas[j].length <= 72) j++;
+      if (j - k >= 4) { out.push('<span class="vinetas-breves">' + lineas.slice(k, j).map(linea).join('') + '</span>'); k = j; }
+      else { out.push(linea(lineas[k])); k++; }
+    }
+    return out.join('');
+  }
   function seg(i) { return (escena.vineta && escena.vineta.indexOf(i) >= 0 ? '• ' : '') + escena.segmentos[i]; }
   function segs(a) {
     return (a || []).map(function (i, n) { return (n && escena.parrafo && escena.parrafo.indexOf(i) >= 0 ? '\n' : n ? ' ' : '') + seg(i); }).join('');
@@ -126,10 +141,62 @@
     }
     return alto + Math.max(0, n - 1) * (parseFloat(cs.rowGap) || 0) <= libre;
   }
+  /* ---------- Sin espacios en blanco (Esteban, 28/10/2026: «recuerda no dejar esos espacios en blanco») ----------
+     Con datos.sinHuecos, la letra de las cajas de lectura de alto fijo crece hasta 25 px (antes 22) y, si con ella queda bajo el
+     texto un hueco de 110 px o más, la caja recibe allí la ilustración de relleno de la escena (escena.relleno: aprobada,
+     del tema del texto y distinta de las que la escena ya muestra). */
+  function topeLetra(normal) { return datos.sinHuecos ? Math.max(normal, 25) : normal; }
+  /* Holgura del encaje: con datos.sinHuecos se deja 4 px libres, porque otro navegador dibuja la misma fuente 1–3 px más alta y
+     el panel abriría una barra de desplazamiento. */
+  function holgura() { return datos.sinHuecos ? -3 : 1; }
+  /* ¿Cabe el contenido de la caja? Sin desplazamiento y, con datos.sinHuecos, con el texto terminando al menos 3 px antes de su
+     borde de abajo. scrollHeight nunca baja de clientHeight: con la holgura negativa, «scrollHeight <= clientHeight − 3» no se
+     cumplía nunca y la letra bajaba siempre al mínimo, con un hueco debajo (Esteban, 28/10/2026, U1-L1-E04: «ese espacio
+     debajo… tiene que ser rellenado»). Sin datos.sinHuecos, la misma prueba de antes. */
+  function entra(caja) {
+    if (caja.scrollHeight > caja.clientHeight + 1) return false;
+    if (holgura() >= 0) return true;
+    var cs = getComputedStyle(caja), r = caja.getBoundingClientRect(), e = caja.offsetHeight ? r.height / caja.offsetHeight : 1;
+    var fondo = r.bottom - (parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth)) * e, fin = -Infinity;
+    var w = document.createTreeWalker(caja, NodeFilter.SHOW_TEXT), n, rg = document.createRange(), q;
+    while ((n = w.nextNode())) {
+      if (!n.textContent.trim() || !n.parentElement || !n.parentElement.getClientRects().length) continue;
+      rg.selectNodeContents(n); q = rg.getBoundingClientRect();
+      if (q.height > 0) fin = Math.max(fin, q.bottom);
+    }
+    return fin <= fondo + holgura() * e;
+  }
+  function alturaContenido(caja) {
+    var arriba = Infinity, abajo = -Infinity, w = document.createTreeWalker(caja, NodeFilter.SHOW_TEXT), n, r = document.createRange();
+    function sumar(b) { if (b.width > 0 && b.height > 0) { arriba = Math.min(arriba, b.top); abajo = Math.max(abajo, b.bottom); } }
+    while ((n = w.nextNode())) {
+      if (!n.textContent.trim() || !n.parentElement || !n.parentElement.getClientRects().length) continue;
+      r.selectNodeContents(n); sumar(r.getBoundingClientRect());
+    }
+    caja.querySelectorAll('img,svg').forEach(function (m) { if (m.getClientRects().length && !m.closest('svg svg')) sumar(m.getBoundingClientRect()); });
+    return abajo > arriba ? abajo - arriba : 0;
+  }
+  function quitarRelleno(caja) {
+    if (!caja) return;
+    [].slice.call(caja.querySelectorAll('.relleno-arte')).forEach(function (f) { f.remove(); });
+    caja.classList.remove('con-relleno');
+  }
+  /* «columna»: dónde va la ilustración dentro de la caja (el texto de la ruta o de las fichas); por omisión, la caja. */
+  function rellenar(caja, columna) {
+    quitarRelleno(caja);
+    if (!datos.sinHuecos || !datos.ilustraciones || !escena.relleno || !caja || !caja.getClientRects().length) return;
+    var cs = getComputedStyle(caja), disp = caja.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom), usado = alturaContenido(caja);
+    if (disp < 160 || disp - usado < 110) return;
+    var dentro = columna || caja, f = document.createElement('figure');
+    f.className = 'relleno-arte'; f.setAttribute('aria-hidden', 'true');
+    f.innerHTML = '<img src="' + srcImagen(escena.relleno) + '" alt="">';
+    dentro.classList.add('con-relleno'); dentro.appendChild(f);
+  }
   function crecerLectura(caja) {
     var texto = caja.querySelector('.ruta-texto');
     caja.classList.remove('apretada', 'sin-arte', 'mini');
-    if (texto) for (var fs = 24; fs > 14.2; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(texto, 4) && caja.scrollHeight <= caja.clientHeight + 1) return; }
+    quitarRelleno(caja);
+    if (texto) for (var fs = topeLetra(24); fs > 14.2; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(texto, 4) && caja.scrollHeight <= caja.clientHeight + 1) { rellenar(caja, texto); return; } }
     caja.style.removeProperty('--fs'); ajustarLectura(caja);
   }
   function reanimar(el) { el.classList.remove('aparece'); void el.offsetWidth; el.classList.add('aparece'); }
@@ -155,6 +222,7 @@
     var propio = [e.titulo_genially || '', e.rotulo || ''].concat(e.bloques.reduce(function (a, b) { return a.concat((b.items || []).map(function (x) { return x.label; })); }, [])).join(' ');
     return temaDeTexto(propio) || temaDeTexto((e.seccion || '') + ' ' + datos.heading);
   }
+  function arteEn(pos) { return !!(datos.ilustraciones && escena && escena.arte && escena.arte.pos === pos); }
   function srcImagen(t) { return BASE + (datos.ilustraciones ? datos.ilustraciones + '/' + t : 'assets/contexto/' + t + '.webp'); }
   /* Escena con poco contenido: un solo bloque de lámina o giro con 1–2 elementos, mapa con hasta 3 ramas o balanza (U1). */
   function escasa(e) {
@@ -186,8 +254,13 @@
   /* El texto crece hasta llenar su caja (máx. 22 px) y se reduce si no cabe. Un texto breve lleva encima el objeto del
      punto en grande; si con él el texto quedaría por debajo de 16 px, el objeto se retira; si ni así cabe, la imagen. */
   function encajarTexto(cont, caja) {
+    quitarRelleno(caja);
+    encajarTextoBase(cont, caja);
+    rellenar(caja);
+  }
+  function encajarTextoBase(cont, caja) {
     var fs;
-    function probar(min) { for (fs = 22; fs >= min; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(caja, 4)) return true; } return false; }
+    function probar(min) { for (fs = topeLetra(22); fs >= min; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(caja, 4)) return true; } return false; }
     cont.classList.remove('sin-arte'); caja.classList.remove('sin-icono');
     if (caja.querySelector('.ctx-icono') && probar(16)) return;
     caja.classList.add('sin-icono');
@@ -195,15 +268,36 @@
   }
 
   /* ---------- Avance, visto y celebración ---------- */
+  /* Leer el 100 % antes de avanzar (Estándares interamericanos; Esteban, 28/10/2026: «cuando hay uno de seguir leyendo… que no
+     lo dejes seguir a la siguiente página… hey, no has leído el 100 %… tienes que completar el 100 % para poder avanzar»).
+     Con datos.completar, lo que se abre en una lectura por partes queda visto al llegar a su última parte: el toque que abre
+     y marca un elemento es un solo «turno», y la lectura creada en ese turno decide cuándo se marca. Sin datos.completar,
+     marcar() es marcarYa(), como antes. */
+  var turno = 0, ultimaLectura = null, generacion = 0;
+  document.addEventListener('pointerdown', function () { turno++; }, true);
+  document.addEventListener('keydown', function () { turno++; }, true);
   function marcar(id) {
+    if (vistos[id]) return;
+    if (!datos.completar) { marcarYa(id); return; }
+    var t = turno, g = generacion;
+    setTimeout(function () {
+      if (g !== generacion) return;
+      var L = ultimaLectura;
+      if (L && L.turno === t && !L.completa) L.alCompletar.push(function () { if (g === generacion) marcarYa(id); });
+      else marcarYa(id);
+    }, 0);
+  }
+  function marcarYa(id) {
     if (vistos[id]) return;
     vistos[id] = true;
     raiz.querySelectorAll('[data-id="' + id + '"]').forEach(function (b) { b.classList.add('visto'); });
+    if (datos.sinHuecos) { encajarTarjetas(); ajustarExtractos(); }
     var n = Object.keys(vistos).length, barra = raiz.querySelector('.barra i');
     if (!barra) return;
     barra.style.width = (100 * n / total) + '%';
     raiz.querySelector('.avance output').textContent = n + ' / ' + total;
-    if (n === total) celebrar();
+    /* Con el visto diferido, «Exploración completa» llega después de encajar los textos: se vuelven a encajar. */
+    if (n === total) { celebrar(); if (datos.completar) window.dispatchEvent(new Event('resize')); }
   }
   function celebrar() {
     var av = raiz.querySelector('.avance');
@@ -238,9 +332,10 @@
      larguísimo le hace dormir el cerebro»): con datos.pagina (caracteres por parte), una lectura más larga se muestra por
      partes de uno o dos tramos, con «Seguir leyendo» y su posición; nada se recorta y todo queda en la página. «ajustar»
      vuelve a encajar la letra en cada parte. */
-  function dosificar(caja, ajustar) {
-    var lim = datos.pagina, t = caja && caja.querySelector('.lectura-texto'), viejo = caja && caja.querySelector('.lectura-paginas');
+  function dosificar(caja, ajustar, limite) {
+    var lim = limite || datos.pagina, t = caja && caja.querySelector('.lectura-texto'), viejo = caja && caja.querySelector('.lectura-paginas');
     if (viejo) viejo.remove();
+    if (caja) caja.classList.remove('lectura-pendiente');
     if (!lim || !t) return false;
     var partes = [].slice.call(t.querySelectorAll('.parr')), total = 0;
     partes.forEach(function (x) { x.hidden = false; total += x.textContent.length; });
@@ -258,8 +353,18 @@
       '<span class="pag-puntos" aria-hidden="true">' + paginas.map(function () { return '<i></i>'; }).join('') + '</span><span class="pag-estado" aria-live="polite"></span>' +
       '<button type="button" class="pag-siguiente">Seguir leyendo <i class="fas fa-arrow-right" aria-hidden="true"></i></button>';
     t.parentNode.insertBefore(nav, t.nextSibling);
+    /* Partes leídas de esta lectura (datos.completar): el visto y los «Siguiente» esperan a la última. */
+    var L = { partes: paginas.length, leidas: {}, completa: false, turno: turno, alCompletar: [], sig: nav.querySelector('.pag-siguiente') };
+    nav.lectura = L;
+    if (datos.completar) { ultimaLectura = L; caja.classList.add('lectura-pendiente'); }
     function ir(i) {
       pos = i;
+      L.leidas[i] = true;
+      if (!L.completa && Object.keys(L.leidas).length === L.partes) {
+        L.completa = true; caja.classList.remove('lectura-pendiente');
+        L.alCompletar.splice(0).forEach(function (f) { f(); });
+        caja.dispatchEvent(new CustomEvent('lectura-completa', { bubbles: true }));
+      }
       paginas.forEach(function (pg, j) { pg.forEach(function (x) { x.hidden = j !== i; }); });
       nav.querySelector('.pag-estado').textContent = 'Parte ' + (i + 1) + ' de ' + paginas.length;
       nav.querySelectorAll('.pag-puntos i').forEach(function (d, j) { d.classList.toggle('activo', j <= i); });
@@ -273,6 +378,94 @@
     ir(0);
     return true;
   }
+  /* Cajas de varios párrafos (el caso de la «Actividad de aprendizaje») que no caben ni a 15 px: sus párrafos se reparten en
+     partes con «Seguir leyendo», igual que dosificar(), sin recortar nada (Esteban, 28/10/2026: «que no aparezca letra así
+     cortada»). Si un párrafo solo no cabe, la letra baja hasta 13 px. «medida»: la caja de alto fijo que no debe desbordarse, si
+     no es la misma que reparte (las celdas de una fila de tabla dentro de su panel). Devuelve si hizo partes. */
+  function quitarPartes(caja) {
+    [].slice.call(caja.children).forEach(function (x) { if (x.classList.contains('lectura-paginas')) x.remove(); else x.classList.remove('parte-oculta'); });
+    caja.classList.remove('lectura-pendiente');
+  }
+  function partirBloques(caja, medida) {
+    quitarPartes(caja);
+    medida = medida || caja;
+    var unidades = [].slice.call(caja.children);
+    if (unidades.length < 2) return false;
+    var nav = document.createElement('div');
+    nav.className = 'lectura-paginas';
+    nav.innerHTML = '<button type="button" class="pag-anterior" aria-label="Parte anterior"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>' +
+      '<span class="pag-puntos" aria-hidden="true"></span><span class="pag-estado" aria-live="polite">Parte 1 de 2</span>' +
+      '<button type="button" class="pag-siguiente">Seguir leyendo <i class="fas fa-arrow-right" aria-hidden="true"></i></button>';
+    caja.appendChild(nav);
+    function desborda() { return medida.scrollHeight > medida.clientHeight + 1; }
+    var paginas;
+    for (var fs = 15; fs >= 13; fs -= 1) {
+      caja.style.setProperty('--fs', fs + 'px');
+      paginas = [[]];
+      unidades.forEach(function (x) { x.classList.add('parte-oculta'); });
+      unidades.forEach(function (x) {
+        var pg = paginas[paginas.length - 1];
+        x.classList.remove('parte-oculta');
+        if (pg.length && desborda()) { pg.forEach(function (y) { y.classList.add('parte-oculta'); }); paginas.push([x]); }
+        else pg.push(x);
+      });
+      var caben = paginas.every(function (pg) {
+        unidades.forEach(function (x) { x.classList.toggle('parte-oculta', pg.indexOf(x) < 0); });
+        return !desborda();
+      });
+      if (caben) break;
+    }
+    if (paginas.length < 2) { nav.remove(); unidades.forEach(function (x) { x.classList.remove('parte-oculta'); }); return false; }
+    nav.querySelector('.pag-puntos').innerHTML = paginas.map(function () { return '<i></i>'; }).join('');
+    var L = { partes: paginas.length, leidas: {}, completa: false, turno: turno, alCompletar: [], sig: nav.querySelector('.pag-siguiente') }, pos = 0;
+    nav.lectura = L;
+    /* Una página ya leída completa no vuelve a pedir lectura al regresar a ella. */
+    if (caja.dataset.leida) L.completa = true;
+    else if (datos.completar) { ultimaLectura = L; caja.classList.add('lectura-pendiente'); }
+    function ir(i) {
+      pos = i;
+      L.leidas[i] = true;
+      if (!L.completa && Object.keys(L.leidas).length === L.partes) {
+        L.completa = true; caja.dataset.leida = '1'; caja.classList.remove('lectura-pendiente');
+        L.alCompletar.splice(0).forEach(function (f) { f(); });
+        caja.dispatchEvent(new CustomEvent('lectura-completa', { bubbles: true }));
+      }
+      paginas.forEach(function (pg, j) { pg.forEach(function (x) { x.classList.toggle('parte-oculta', j !== i); }); });
+      nav.querySelector('.pag-estado').textContent = 'Parte ' + (i + 1) + ' de ' + paginas.length;
+      nav.querySelectorAll('.pag-puntos i').forEach(function (d, j) { d.classList.toggle('activo', j <= i); });
+      nav.querySelector('.pag-anterior').disabled = i === 0;
+      nav.querySelector('.pag-siguiente').disabled = i === paginas.length - 1;
+      reanimar(caja);
+    }
+    nav.querySelector('.pag-anterior').addEventListener('click', function (e) { e.stopPropagation(); ir(Math.max(0, pos - 1)); });
+    nav.querySelector('.pag-siguiente').addEventListener('click', function (e) { e.stopPropagation(); ir(Math.min(paginas.length - 1, pos + 1)); });
+    ir(0);
+    return true;
+  }
+  /* Lectura por partes sin terminar a la vista dentro de «cont», o null (siempre null sin datos.completar). */
+  function faltaLeer(cont) {
+    if (!datos.completar || !cont) return null;
+    var navs = cont.querySelectorAll('.lectura-paginas');
+    for (var i = 0; i < navs.length; i++) { var L = navs[i].lectura; if (L && !L.completa && navs[i].offsetParent !== null) return L; }
+    return null;
+  }
+  function textoFalta(L, que) {
+    var leidas = Object.keys(L.leidas).length, faltan = L.partes - leidas;
+    return 'Aún no has leído el 100 % de ' + que + ': llevas el ' + Math.round(100 * leidas / L.partes) + ' % y ' +
+      (faltan === 1 ? 'te falta 1 parte' : 'te faltan ' + faltan + ' partes') + '. Usa «Seguir leyendo» para completarla y poder avanzar.';
+  }
+  /* Aviso breve sobre la mediación (o la tarjeta); «pulsar», el «Seguir leyendo» pendiente, late para mostrar qué falta. */
+  function avisar(lugar, texto, pulsar) {
+    var a = null;
+    [].forEach.call(lugar.children, function (c) { if (c.classList.contains('aviso-completar')) a = c; });
+    if (!a) { a = document.createElement('p'); a.className = 'aviso-completar'; a.setAttribute('role', 'alert'); lugar.appendChild(a); }
+    a.innerHTML = '<i class="fas fa-lock" aria-hidden="true"></i><span>' + esc(texto) + '</span>';
+    a.classList.remove('sale'); void a.offsetWidth; a.classList.add('sale');
+    clearTimeout(a.reloj); a.reloj = setTimeout(function () { a.classList.remove('sale'); }, 4500);
+    if (pulsar) { pulsar.classList.remove('llamar'); void pulsar.offsetWidth; pulsar.classList.add('llamar'); pulsar.focus({ preventScroll: true }); }
+  }
+  /* «Siguiente» con candado: sigue activo para explicar qué falta, pero no avanza. */
+  function candado(boton, si) { boton.classList.toggle('bloqueado', !!si); boton.setAttribute('aria-disabled', String(!!si)); }
   function leer(titulo, texto, obj, desde) {
     var l = raiz.querySelector('.lector');
     retornoFoco = desde || null;
@@ -385,6 +578,76 @@
   };
 
   /* Comienzo literal del texto (sin notas ni marcas) para que la cara de la tarjeta no quede vacía; el texto completo se lee al girarla. */
+  /* Ninguna letra cortada (Esteban, 28/10/2026: «que no aparezca letra así cortada… déjalo en directrices»): un extracto que no
+     cabe en sus líneas se acorta por palabras completas y termina en «…» (el texto completo está en su lector); si no caben ni
+     tres palabras, no se muestra. Reemplaza el corte de -webkit-line-clamp, que dejaba palabras partidas. */
+  function ajustarExtractos() {
+    raiz.querySelectorAll('.giro-extracto,.rama-extracto,.esquema-extracto').forEach(function (e) {
+      if (!e.dataset.completo) e.dataset.completo = e.textContent;
+      var base = e.dataset.completo, puntos = /…$/.test(base), palabras = base.replace(/…$/, '').split(/\s+/), lo = 0, hi = palabras.length;
+      function poner(n) { e.textContent = palabras.slice(0, n).join(' ') + (n < palabras.length || puntos ? '…' : ''); }
+      var caja = e.closest('.cara') || e.closest('button');
+      function cabe() { return e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1 && (!caja || caja.scrollHeight <= caja.clientHeight + 1); }
+      e.style.display = ''; e.style.fontSize = ''; e.style.webkitLineClamp = '';
+      poner(hi);
+      /* Con datos.sinHuecos, el extracto completo crece (hasta 17 px) mientras quepa en su tarjeta: la tarjeta no queda medio
+         vacía con letra pequeña («no dejar esos espacios en blanco»). */
+      var tarjeta = e.closest('.cara') || e.closest('button');
+      if (datos.sinHuecos && tarjeta && !e.classList.contains('giro-extracto') && cabe()) {
+        var fs0 = parseFloat(getComputedStyle(e).fontSize), mejor = 0;
+        e.style.webkitLineClamp = 'unset';
+        for (var fs = 17; fs > fs0; fs -= 0.5) {
+          e.style.fontSize = fs + 'px';
+          if (tarjeta.scrollHeight <= tarjeta.clientHeight + 1 && cabe()) { mejor = fs; break; }
+        }
+        if (!mejor) { e.style.fontSize = ''; e.style.webkitLineClamp = ''; }
+        return;
+      }
+      if (cabe()) return;
+      while (lo < hi) { var m = Math.ceil((lo + hi) / 2); poner(m); if (cabe()) lo = m; else hi = m - 1; }
+      if (lo < 3) { e.style.display = 'none'; return; }
+      poner(lo);
+    });
+  }
+  /* Giro en dos filas (Esteban, 28/10/2026, sobre las cinco tarjetas angostas de U1-L3-E28: «organizarla de una distinta
+     manera… para que no queden así esas líneas largas… agradable a la vista»): con datos.sinHuecos, si cada tarjeta quedaría de
+     menos de 150 px de ancho, van en dos filas (3 + 2 centradas, 2 + 2, 3 + 3), con el dibujo más pequeño. */
+  function organizarGiros() {
+    raiz.querySelectorAll('.giros').forEach(function (g) {
+      var n = g.children.length;
+      g.style.removeProperty('--c'); g.classList.remove('dos-filas');
+      if (!datos.sinHuecos || n < 4 || g.clientWidth / n >= 150) return;
+      g.classList.add('dos-filas');
+      g.style.setProperty('--c', String(Math.ceil(n / 2) * 2));
+    });
+  }
+  /* Si la tarjeta aún no cabe (rótulo largo), primero se quita el dibujo de la cara y luego baja la letra del rótulo hasta
+     10 px: el rótulo nunca queda cortado. */
+  function encajarTarjetas() {
+    raiz.querySelectorAll('.giro .cara, .nodo-esquema').forEach(function (t) {
+      var r = t.querySelector('.giro-rotulo, .esquema-rotulo'), arte = t.querySelector('.giro-arte'), ex = t.querySelector('.giro-extracto, .esquema-extracto');
+      if (!r) return;
+      /* El rótulo y el dibujo se ajustan sin el extracto; luego ajustarExtractos() le da al extracto lo que queda. */
+      var antes = ex ? ex.style.display : null;
+      if (ex) ex.style.display = 'none';
+      encajarRotulo(t, r, arte);
+      if (ex) ex.style.display = antes;
+    });
+  }
+  function encajarRotulo(t, r, arte) {
+    (function () {
+      r.style.fontSize = ''; r.style.overflowWrap = ''; if (arte) arte.style.display = '';
+      /* Ancho útil de la tarjeta: una palabra larga («Responsabilización») no puede ser más ancha que ella. */
+      var cs = getComputedStyle(t), ancho = t.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      function cabe() { return t.scrollHeight <= t.clientHeight + 1 && r.scrollWidth <= ancho + 1; }
+      if (cabe()) return;
+      if (arte) { arte.style.display = 'none'; if (cabe()) return; }
+      for (var fs = parseFloat(getComputedStyle(r).fontSize) - 0.5; fs >= 10.5; fs -= 0.5) { r.style.fontSize = fs + 'px'; if (cabe()) return; }
+      /* Último recurso: la palabra se parte (con guion donde el navegador sabe hacerlo) antes que cortarse. */
+      r.style.overflowWrap = 'anywhere';
+      for (fs = 12; fs >= 10.5; fs -= 0.5) { r.style.fontSize = fs + 'px'; if (cabe()) return; }
+    })();
+  }
   function extracto(s, lim) {
     var t = String(s).replace(/\s*\n\s*/g, ' ').replace(/\[\^\d+\]/g, '').replace(/^• /, '').replace(/\*\*/g, '');
     return t.length > lim + 5 ? t.slice(0, lim).replace(/\s+\S*$/, '') + '…' : t;
@@ -418,7 +681,8 @@
       '<div class="panel-texto"><p class="panel-vacio">' + mano + ' Elige una ficha para leer su contenido.</p></div></div>';
   };
   B.fichas.activar = function (b, k, el) {
-    var panel = el.querySelector('.panel-fichas');
+    var panel = el.querySelector('.panel-fichas'), reajuste = null;
+    window.addEventListener('resize', function () { if (reajuste) reajuste(); });
     el.querySelectorAll('.ficha').forEach(function (f) {
       f.addEventListener('click', function () {
         var i = Number(f.dataset.i), it = b.items[i];
@@ -428,6 +692,7 @@
         panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
         marcar(f.dataset.id);
         var pt = panel.querySelector('.panel-texto'), ajustar = grande ? function () { encajarTexto(panel, pt); } : null;
+        reajuste = ajustar;
         if (!dosificar(pt, ajustar) && ajustar) ajustar();
         reanimar(panel);
       });
@@ -450,7 +715,7 @@
     var caja = el.querySelector('.ruta-lectura'), n = b.items.length, ficha = el.querySelector('.ficha-avance'), traza = el.querySelector('.camino b'), sig = el.querySelector('.btn-siguiente'), pos = -1;
     function ir(i) {
       pos = i;
-      el.querySelectorAll('.paso').forEach(function (o, j) { o.setAttribute('aria-current', String(j === i)); o.classList.toggle('pasado', j < i); if (linea && j === i + 1) o.disabled = false; });
+      el.querySelectorAll('.paso').forEach(function (o, j) { o.setAttribute('aria-current', String(j === i)); o.classList.toggle('pasado', j < i); if (linea && j === i + 1 && !datos.completar) o.disabled = false; });
       var pct = n === 1 ? 50 : 100 * i / (n - 1);
       ficha.style.left = pct + '%'; traza.style.width = pct + '%';
       var it = b.items[i];
@@ -460,9 +725,21 @@
       reanimar(caja);
       sig.disabled = i >= n - 1;
       marcar(k + '-' + i);
+      if (datos.completar) { if (faltaLeer(caja)) candado(sig, !sig.disabled); else listo(); }
     }
+    /* Paso leído completo: se quita el candado y, en la historia, se abre el momento siguiente. */
+    function listo() {
+      candado(sig, false);
+      var o = linea && el.querySelectorAll('.paso')[pos + 1];
+      if (o) o.disabled = false;
+    }
+    caja.addEventListener('lectura-completa', listo);
     el.querySelectorAll('.paso').forEach(function (p) { p.addEventListener('click', function () { ir(Number(p.dataset.i)); }); });
-    sig.addEventListener('click', function () { ir(Math.min(n - 1, pos + 1)); });
+    sig.addEventListener('click', function () {
+      var L = faltaLeer(caja);
+      if (L) { avisar(raiz.querySelector('.escenario'), textoFalta(L, linea ? 'este momento' : 'este paso'), L.sig); return; }
+      ir(Math.min(n - 1, pos + 1));
+    });
     ir(0); /* el primer paso abre solo: la escena nunca empieza en blanco */
   };
   B.linea = function (b, k) {
@@ -518,7 +795,12 @@
       '<p class="nombres-guia"><i class="fas fa-hand-pointer" aria-hidden="true"></i> Arrastra o toca</p>' + orden.map(function (i) {
         return '<button type="button" class="nombre" data-i="' + i + '" aria-pressed="false"><span class="agarre" aria-hidden="true">⋮⋮</span>' + esc(may(b.items[i].label)) + '</button>';
       }).join('') + '</div><div class="defs n' + b.items.length + '">' + b.items.map(function (it, i) {
-        var t = segs(it.segs).replace(/\n/g, ' ').replace(/\[\^\d+\]/g, ''), lim = amplio ? 230 : 100, corto = t.length > lim + 5 ? t.slice(0, lim).replace(/\s+\S*$/, '') + '…' : t;
+        var t = segs(it.segs).replace(/\n/g, ' ').replace(/\[\^\d+\]/g, ''), lim = amplio ? 230 : 100;
+        /* La descripción no empieza con su propio término («• Duplicación de términos: Los plazos…» regalaba la respuesta;
+           pulido del 29/10/2026): antes de acertar se ve desde los dos puntos; al acertar, el texto completo con el término. */
+        var pre = t.match(/^[\s•\-–]*(?:\(?[ivx\d]+[.)]\s*)?([^:.;]{3,60}):\s+/i);
+        if (pre && it.label && pre[1].trim().toLowerCase() === String(it.label).trim().toLowerCase()) t = may(t.slice(pre[0].length));
+        var corto = t.length > lim + 5 ? t.slice(0, lim).replace(/\s+\S*$/, '') + '…' : t;
         return '<button type="button" class="def" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="def-arte">' + svgObjeto(it.obj, amplio ? 64 : 36) + '</span>' +
           '<span class="def-texto">' + esc(corto) + '</span><span class="def-ranura">' + mano + ' Suelta aquí el nombre</span></button>';
       }).join('') + '</div>' + (fig ? figura(b.items.map(function (x) { return x.obj; })) : '') + '</div><p class="empareja-aviso" aria-live="polite"></p>';
@@ -607,12 +889,72 @@
   };
 
   /* Tabla de la fuente: una pestaña por columna o por grupo de filas; el panel muestra sus celdas con su encabezado. */
+  /* Tabla breve (Esteban, 28/10/2026, sobre los nueve artículos de U1-L3-E22: «siento que hay demasiado de artículos»): con
+     datos.sinHuecos, si cada fila es una sola celda y todo junto cabe a la vista (de 2 a 12 filas y 640 caracteres), la tabla se
+     muestra completa, con su encabezado, en vez de una pestaña por fila con un panel casi vacío. Nada que abrir de a una: no
+     cuenta en la exploración. Desde 2 filas (Esteban, 28/10/2026, sobre U1-L1-E04, «Respetar» y «Garantizar»: «ese espacio
+     debajo… tiene que ser rellenado acorde con lo del contenido»); debajo entra la ilustración de relleno del tema. */
+  function celdaTexto(c) { return c === null || c === undefined ? '' : typeof c === 'number' ? seg(c) : c; }
+  function tablaBreve(b) {
+    if (!datos.sinHuecos || !b || b.tipo !== 'tabla' || b.items.length < 2 || b.items.length > 12) return false;
+    if (!b.items.every(function (it) { return it.filas.length === 1 && it.filas[0].length === 1; })) return false;
+    return b.items.reduce(function (a, it) { return a + String(it.label).length + celdaTexto(it.filas[0][0][1]).length; }, 0) <= 640;
+  }
+  function tablaCompleta(b, k) {
+    var encs = b.items.map(function (it) { return celdaTexto(it.filas[0][0][0]); }), comun = encs.every(function (e) { return e === encs[0]; }) ? encs[0] : '';
+    var primera = b.titulo && b.titulo.length ? segs(b.titulo) : '';
+    return '<div class="tabla-breve-caja"><table class="tabla-breve">' +
+      (primera || comun ? '<thead><tr><th scope="col">' + esc(may(primera)) + '</th><th scope="col">' + esc(may(comun)) + '</th></tr></thead>' : '') +
+      '<tbody>' + b.items.map(function (it, i) {
+        return '<tr style="--d:' + (i * 0.05) + 's"><th scope="row">' + rot(it.label) + '</th><td>' + (comun ? '' : '<b class="tabla-enc">' + esc(may(encs[i])) + '</b> ') +
+          '<span class="lectura-texto">' + rico(celdaTexto(it.filas[0][0][1]) || '–') + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function encajarTablaBreve(el) {
+    var c = el.querySelector('.tabla-breve-caja');
+    if (!c) return;
+    quitarRelleno(c);
+    for (var fs = 21; fs >= 12; fs -= 0.5) { c.style.setProperty('--fs', fs + 'px'); if (c.scrollHeight <= c.clientHeight + 1) break; }
+    rellenar(c);
+  }
   B.tabla = function (b, k) {
+    if (tablaBreve(b)) return tablaCompleta(b, k);
     return tituloBloque(b, k) + '<div class="fichas tabla-pestanas" role="tablist">' + b.items.map(function (it, i) {
       return '<button type="button" role="tab" class="ficha' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' + rot(it.label) + '<span class="ficha-visto">' + visto + '</span></button>';
     }).join('') + '</div><div class="panel-fichas panel-tabla" role="tabpanel" tabindex="-1"><div class="panel-texto"></div></div>';
   };
+  /* La fila en grande (19 px) baja de a medio punto hasta caber en el panel; si a 14,5 px aún no cabe, la figura cede su
+     sitio (Estándares interamericanos: pestañas con rótulos largos dejan menos alto). Nunca desplazamiento. */
+  function encajarTabla(panel) {
+    var f = panel.querySelector('.tabla-ficha');
+    if (!f) return;
+    f.classList.remove('sin-figura');
+    function encajar() {
+      for (var fs = topeLetra(19); fs >= 12; fs -= 0.5) {
+        f.style.setProperty('--fs', fs + 'px');
+        if (entra(panel)) return;
+        if (fs <= 14.5 && !f.classList.contains('sin-figura')) { f.classList.add('sin-figura'); fs = 17.5; }
+      }
+    }
+    encajar();
+    /* La ilustración apilada a la que la letra grande deja menos de 100 px sale (diminuta parece un error) y la letra vuelve
+       a encajar sin ella. */
+    var fig = f.classList.contains('apilada') && !f.classList.contains('sin-figura') && f.querySelector('.relleno-arte');
+    if (fig && fig.getBoundingClientRect().height < 100) { f.classList.add('sin-figura'); encajar(); }
+  }
+  /* Fila de varios campos (datos.sinHuecos): la letra crece hasta 17 px y baja hasta caber en el panel; nunca desplazamiento. */
+  function encajarFilas(panel) {
+    var l = panel.querySelector('.tabla-filas');
+    if (!datos.sinHuecos || !l) return;
+    for (var fs = 17; fs >= 11.5; fs -= 0.5) { l.style.setProperty('--fs', fs + 'px'); if (entra(panel)) return; }
+  }
   B.tabla.activar = function (b, k, el) {
+    if (tablaBreve(b)) {
+      encajarTablaBreve(el);
+      if (document.fonts) document.fonts.ready.then(function () { encajarTablaBreve(el); });
+      window.addEventListener('resize', function () { encajarTablaBreve(el); });
+      return;
+    }
     var panel = el.querySelector('.panel-fichas');
     function celda(c) { return c === null || c === undefined ? '' : typeof c === 'number' ? seg(c) : c; }
     el.querySelectorAll('.ficha').forEach(function (f) {
@@ -625,12 +967,30 @@
             return '<span class="tabla-celda">' + (enc ? '<b class="tabla-enc">' + esc(enc) + '</b>' : '') + '<span class="lectura-texto">' + rico(val || '–') + '</span></span>';
           }).join('') + '</li>';
         }).join('') + '</ul>';
-        /* Tabla comparativa con una fila por pestaña (Bienes 1.3): sus celdas en grande junto al objeto, sin franja vacía. */
-        var ficha = it.filas.length === 1 && it.obj;
-        if (ficha) lista = '<div class="tabla-ficha"><figure aria-hidden="true">' + svgObjeto(it.obj, 170) + '</figure>' + lista + '</div>';
+        /* Con datos.sinHuecos, la figura es la ilustración de relleno de la escena, del tema del texto (Esteban, 28/10/2026:
+           «tener algo relacionado al tema»), en vez del objeto genérico. */
+        var conImg = datos.sinHuecos && datos.ilustraciones && escena.relleno;
+        /* Tabla comparativa con una fila por pestaña (Bienes 1.3): sus celdas en grande junto al objeto, sin franja vacía. Con la
+           ilustración de relleno, también la fila sin objeto. */
+        var ficha = it.filas.length === 1 && (it.obj || conImg);
+        quitarRelleno(panel);
+        /* Apilada: la celda arriba, con letra grande, y la ilustración del tema llenando el resto del panel (sin franjas vacías
+           arriba y abajo de una celda breve centrada). */
+        if (ficha) lista = conImg ? '<div class="tabla-ficha apilada">' + lista + '<figure class="relleno-arte" aria-hidden="true"><img src="' + srcImagen(escena.relleno) + '" alt=""></figure></div>'
+          : '<div class="tabla-ficha"><figure aria-hidden="true">' + svgObjeto(it.obj, 170) + '</figure>' + lista + '</div>';
         var texto = panel.querySelector('.panel-texto');
         texto.classList.toggle('con-ficha', !!ficha);
         texto.innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p>' + lista;
+        if (ficha) encajarTabla(panel); else { encajarFilas(panel); rellenar(panel); }   // varias filas breves: el tema debajo
+        /* Una fila que ni con la letra más pequeña cabe en el panel (U3-L1 de Delitos: cuatro columnas de texto largo) reparte sus
+           celdas en partes con «Seguir leyendo», sin la ilustración: nunca letra cortada ni desplazamiento. */
+        var li = panel.querySelector('.tabla-filas li');
+        if (li && li.children.length > 1 && !entra(panel)) {
+          var tf = panel.querySelector('.tabla-ficha');
+          if (tf) tf.classList.add('sin-figura');
+          quitarRelleno(panel);
+          partirBloques(li, panel);
+        }
         reanimar(panel); marcar(f.dataset.id);
       });
     });
@@ -672,12 +1032,18 @@
   };
   /* El apartado abierto ocupa el espacio que dejan los demás; la letra crece si el texto es breve (hasta 22 px) y se reduce hasta que cabe: nunca desplazamiento. */
   function encajarPanel(p) {
-    for (var fs = 22; fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (p.scrollHeight <= p.clientHeight + 1) return; }
+    quitarRelleno(p);
+    for (var fs = topeLetra(22); fs >= 11.5; fs -= 0.5) { p.style.setProperty('--fs', fs + 'px'); if (entra(p)) break; }
+    rellenar(p);
   }
   B.acordeon.activar = function (b, k, el) {
     var cabs = el.querySelectorAll('.acordeon-cab');
     function abrir(c) {
-      cabs.forEach(function (o) { var si = o === c; o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si); });
+      cabs.forEach(function (o) {
+        var si = o === c;
+        if (!si) quitarRelleno(o.nextElementSibling);   // el que se cierra suelta su ilustración: con ella seguía a la vista
+        o.setAttribute('aria-expanded', String(si)); o.nextElementSibling.hidden = !si; o.parentNode.classList.toggle('abierto', si);
+      });
       var p = c.nextElementSibling;
       if (!dosificar(p, function () { encajarPanel(p); })) encajarPanel(p);
       reanimar(p); marcar(c.dataset.id);
@@ -730,24 +1096,30 @@
         (conTexto ? '<span class="rama-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : 130))) + '</span>' : '') + '</button>';
     });
     return '<div class="mental n' + n + (conTexto ? ' con-extracto' : '') + '"><svg class="mental-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
-      '<div class="mental-centro"><i class="fas fa-lightbulb" aria-hidden="true"></i><span>' + esc(may(centroTitulo())) + '</span></div>' + nodos + '</div>';
+      '<div class="mental-centro">' + (arteEn('centro') ? '<img class="mental-arte" src="' + srcImagen(escena.arte.img) + '" alt="">' : '<i class="fas fa-lightbulb" aria-hidden="true"></i>') +
+      (datos.tituloFuera ? '' : '<span>' + esc(may(centroTitulo())) + '</span>') + '</div>' + nodos + '</div>';
   };
   B.mental.activar = function (b, k, el) { abreLector(el, b); };
 
-  /* Mapa conceptual jerárquico: el concepto de la escena arriba y, unidos por conectores, sus elementos debajo. */
+  /* Mapa conceptual jerárquico: el concepto de la escena arriba y, unidos por conectores, sus elementos debajo. Con
+     datos.tituloFuera (Delitos informáticos; Esteban, 29/10/2026: el título de la escena «va en la plantilla de Genially… no
+     mezcles más la información»), la raíz no repite ese título: es la ilustración aprobada de la escena, y el título queda en
+     Genially, encima o al lado del HTML. */
   B.esquema = function (b, k) {
     var n = b.items.length, xs = b.items.map(function (_, i) { return (i + 0.5) * 100 / n; });
-    var lineas = '<line x1="50" y1="21" x2="50" y2="31"/>' + (n > 1 ? '<line x1="' + xs[0] + '" y1="31" x2="' + xs[n - 1] + '" y2="31"/>' : '') +
-      xs.map(function (x) { return '<line x1="' + x + '" y1="31" x2="' + x + '" y2="40"/>'; }).join('');
+    var arte = !!(datos.tituloFuera && datos.ilustraciones && escena.ilustracion), y = arte ? [31, 36, 41] : [21, 31, 40];
+    var lineas = '<line x1="50" y1="' + y[0] + '" x2="50" y2="' + y[1] + '"/>' + (n > 1 ? '<line x1="' + xs[0] + '" y1="' + y[1] + '" x2="' + xs[n - 1] + '" y2="' + y[1] + '"/>' : '') +
+      xs.map(function (x) { return '<line x1="' + x + '" y1="' + y[1] + '" x2="' + x + '" y2="' + y[2] + '"/>'; }).join('');
+    var cabeza = arte ? '<div class="esquema-raiz con-arte" aria-hidden="true"><img src="' + srcImagen(escena.ilustracion) + '" alt=""></div>'
+      : '<div class="esquema-raiz"><span>' + esc(may(centroTitulo())) + '</span></div>';
     return '<div class="esquema n' + n + '"><svg class="esquema-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
-      '<div class="esquema-raiz"><span>' + esc(may(centroTitulo())) + '</span></div><div class="esquema-hijos">' + b.items.map(function (it, i) {
+      cabeza + '<div class="esquema-hijos">' + b.items.map(function (it, i) {
         return '<button type="button" class="nodo-esquema' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.3 + i * 0.08) + 's">' +
           '<span class="esquema-arte">' + svgObjeto(it.obj, 46) + '</span><span class="esquema-rotulo">' + rot(it.label) + '</span>' +
           '<span class="esquema-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : n <= 3 ? 170 : 105))) + '</span><span class="esquema-marca">' + mano + ' Ver más' + visto + '</span></button>';
       }).join('') + '</div></div>';
   };
   B.esquema.activar = function (b, k, el) { abreLector(el, b); };
-
   /* Comparador (contenido que contrasta figuras: «a diferencia de…», «buena fe simple y… exenta de culpa», «frente al
      comiso»): columnas lado a lado; la que se toca se ensancha con su texto completo y las demás se compactan. Usa los
      estilos .columnas del motor. */
@@ -768,6 +1140,7 @@
         var si = j === i, lec = o.querySelector('.col-lectura');
         o.classList.toggle('abierta', si);
         o.querySelector('.col-boton').setAttribute('aria-expanded', String(si));
+        if (!si) quitarRelleno(lec);   // la columna que se cierra no guarda la ilustración de relleno de cuando estuvo abierta
         lec.hidden = !si;
         lec.innerHTML = si ? '<p class="lectura-texto">' + rico(segs(b.items[j].segs)) + '</p>' : '';
       });
@@ -797,6 +1170,95 @@
       return segs(l.segs);
     }).join('\n');
   }
+  /* En la hoja de la actividad (introducción, situación, cierre), con datos.sinHuecos, los rótulos breves seguidos («Actividad
+     inicial», «Pregunta») van en una sola línea separados por « · », en el orden de la ficha: uno bajo otro dejaban una franja
+     vacía a su derecha (U3-L3-E05, U5-L1-E03). */
+  function lineasHoja(ls) {
+    if (!datos.sinHuecos) return textoLineas(ls);
+    var out = [], rot = [];
+    ls.forEach(function (l) {
+      if (l.tipo === 'rot' && segs(l.segs).length <= 60) { rot.push(segs(l.segs)); return; }
+      if (rot.length) { out.push(rot.join(' · ')); rot = []; }
+      out.push(textoLineas([l]));
+    });
+    if (rot.length) out.push(rot.join(' · '));
+    return out.join('\n');
+  }
+  /* ---------- Tarjeta de retroalimentación con memes (Estándares interamericanos; Esteban, 28/10/2026, tras la reunión con Juan:
+     «cuando le dé una opción que es incorrecta le aparezca la imagen y le dé como para volver… si le da otra incorrecta le vuelve
+     a aparecer otra imagen según el meme… y solo cuando elige la correcta ya lo deja avanzar a la siguiente pregunta») ----------
+     Con datos.retro {reacciones, frases, acierto, rotulo}, en el lector:
+     · «meme»: la tarjeta aprobada de ese error (imagen con su texto dibujado, que va también como texto alternativo), con botones
+       reales sobre su «Vuelve a intentarlo» y su cierre, y «Leer la retroalimentación de la ficha», con el texto literal;
+     · «mal»: el mismo diseño en HTML, con un personaje de reacción distinto en cada intento, su globo, la lección, «¿La opción B?»
+       y la retroalimentación literal de la ficha;
+     · «bien»: «¡Respuesta correcta!», la retroalimentación, la respuesta y la fuente; su botón lleva a la página siguiente.
+     Escape o el cierre vuelven a la misma pregunta. */
+  function encajarTarjeta(caja) {
+    var zona = caja.querySelector('.tr-texto'), t = zona && zona.querySelector('.lectura-texto');
+    if (!t) return;
+    /* Con datos.sinHuecos, la retroalimentación breve crece hasta 24 px y llena su zona (sin franja vacía sobre el botón). */
+    for (var fs = datos.sinHuecos ? 24 : 17; fs >= 11.5; fs -= 0.5) {
+      t.style.fontSize = fs + 'px';
+      if (zona.scrollHeight <= zona.clientHeight + 1 && caja.scrollHeight <= caja.clientHeight + 1) return;
+    }
+  }
+  function tarjeta(op) {
+    var l = raiz.querySelector('.lector'), RR = datos.retro, n = op.idx || 0, html;
+    retornoFoco = op.desde || null;
+    if (op.tipo === 'meme') {
+      html = '<div class="lector-caja tarjeta-retro con-meme" role="dialog" aria-modal="true" aria-label="Respuesta incorrecta" tabindex="-1">' +
+        '<div class="tr-meme"><img src="' + srcImagen(op.meme.img) + '" alt="' + esc(op.meme.alt) + '">' +
+        '<button type="button" class="tr-volver-img">' + esc(op.boton) + '</button>' +
+        '<button type="button" class="tr-x-img" aria-label="Cerrar y volver a la pregunta"></button></div>' +
+        (op.texto ? '<p class="tr-pie"><button type="button" class="tr-leer"><i class="fas fa-book-open" aria-hidden="true"></i> Leer la retroalimentación de la ficha</button></p>' : '') +
+        '</div>';
+    } else {
+      var bien = op.tipo === 'bien';
+      var pers = bien ? RR.acierto[n % RR.acierto.length] : RR.reacciones[n % RR.reacciones.length];
+      var globo = bien ? ['¡Muy bien!', '¡Eso es!', '¡Así es!'][n % 3] : RR.frases[n % RR.frases.length];
+      var titulo = bien ? '¡Respuesta <b>correcta!</b>' : op.clasifica ? '¿Esa <b>categoría?</b>' : '¿La opción <b>' + esc(op.letra) + '?</b>';
+      var sub = bien ? (op.texto ? 'Así lo explica la ficha:' : '¡Muy bien!') : op.clasifica ? '¡Esa no es la clasificación!' : '¡No es la respuesta! Revisa por qué:';
+      /* Sin texto de la ficha: el acierto nombra la categoría elegida; nunca muestra el aviso de error (antes, «¡Respuesta
+         correcta!» con «Esta afirmación no corresponde a esa categoría…», en las clasificaciones de U5). */
+      var texto = op.texto || (bien ? (op.categoria ? 'Esta afirmación corresponde a la categoría «' + op.categoria + '».' : '')
+        : op.clasifica ? 'Esta afirmación no corresponde a esa categoría. Vuelve a leerla e inténtalo de nuevo.'
+        : 'Vuelve a leer la pregunta e inténtalo de nuevo.');
+      html = '<div class="lector-caja tarjeta-retro ' + (bien ? 'bien' : 'mal') + '" role="dialog" aria-modal="true" aria-label="' +
+        (bien ? 'Respuesta correcta' : 'Respuesta incorrecta') + '" tabindex="-1">' +
+        '<div class="tr-izq" aria-hidden="true"><span class="tr-globo">' + esc(globo) + '</span><img class="tr-personaje" src="' + srcImagen(pers) + '" alt=""></div>' +
+        '<div class="tr-der"><p class="tr-chip">' + esc(op.chip) + '</p>' +
+        '<button type="button" class="tr-x" aria-label="Cerrar y volver a la pregunta"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+        '<p class="tr-titulo">' + titulo + '</p><span class="tr-linea" aria-hidden="true"></span><p class="tr-sub">' + esc(sub) + '</p>' +
+        '<div class="tr-texto"><p class="lectura-texto">' + rico(texto) + '</p></div>' +
+        '<button type="button" class="tr-boton">' + esc(op.boton) + ' <i class="fas fa-' + (bien ? 'arrow-right' : 'rotate-left') + '" aria-hidden="true"></i></button></div></div>';
+    }
+    l.innerHTML = html;
+    l.hidden = false;
+    var caja = l.firstChild;
+    function salir() {
+      var L = op.alBoton && faltaLeer(caja);
+      if (L) { avisar(caja, textoFalta(L, 'la retroalimentación'), L.sig); return; }
+      cerrarLector(); if (op.alBoton) op.alBoton();
+    }
+    caja.querySelectorAll('.tr-volver-img,.tr-boton').forEach(function (x) { x.addEventListener('click', salir); });
+    caja.querySelectorAll('.tr-x-img,.tr-x').forEach(function (x) { x.addEventListener('click', cerrarLector); });
+    var leerFicha = caja.querySelector('.tr-leer');
+    if (leerFicha) leerFicha.addEventListener('click', function () {
+      tarjeta({ tipo: 'mal', idx: n, chip: op.chip, letra: op.letra, texto: op.texto, boton: op.boton, desde: op.desde, clasifica: op.clasifica });
+    });
+    if (op.tipo !== 'meme') {
+      var zona = caja.querySelector('.tr-texto');
+      /* La tarjeta tiene menos alto que un panel: su retroalimentación se parte en tramos de 300 caracteres, para que
+         «Seguir leyendo» nunca quede cortado al fondo. */
+      if (!dosificar(zona, function () { encajarTarjeta(caja); }, datos.sinHuecos ? 300 : null)) encajarTarjeta(caja);
+      var bt = caja.querySelector('.tr-boton');
+      if (op.alBoton && faltaLeer(caja)) { candado(bt, true); caja.addEventListener('lectura-completa', function () { candado(bt, false); }); }
+    }
+    reanimar(caja);
+    var foco = caja.querySelector('.tr-volver-img,.tr-boton');
+    (foco || caja).focus({ preventScroll: true });
+  }
   function sinMarca(t) { return String(t).replace(/^(?:Opción\s+)?[A-Da-d][.:)]\s+/, ''); }
   B.actividad = function (b, k) {
     var paginas = [];
@@ -812,8 +1274,9 @@
         var ls = p === 'intro' ? b.intro : p === 'cierre' ? b.cierre : b.preguntas[Number(p.slice(1))].contexto;
         var rotulo = p === 'intro' ? 'Actividad' : p === 'cierre' ? 'Para cerrar la actividad' : 'Antes de la pregunta ' + (Number(p.slice(1)) + 1);
         cuerpo = '<div class="act-hoja act-encaja"><p class="act-eyebrow"><i class="fas ' + (p === 'cierre' ? 'fa-flag-checkered' : p === 'intro' ? 'fa-puzzle-piece' : 'fa-folder-open') + '" aria-hidden="true"></i> ' +
-          rotulo + '</p><p class="lectura-texto">' + rico(textoLineas(ls)) + '</p></div>' +
-          '<figure class="act-figura" aria-hidden="true">' + svgObjeto(p === 'cierre' ? 'libros' : p === 'intro' ? 'expediente' : 'documento', 150) + '</figure>';
+          rotulo + '</p><p class="lectura-texto">' + rico(lineasHoja(ls)) + '</p></div>' +
+          '<figure class="act-figura" aria-hidden="true">' + (datos.ilustraciones && escena.ilustracion ? '<img src="' + srcImagen(escena.ilustracion) + '" alt="">'
+            : svgObjeto(p === 'cierre' ? 'libros' : p === 'intro' ? 'expediente' : 'documento', 150)) + '</figure>';
       } else {
         var i = Number(p.slice(1)), q = b.preguntas[i], dos = q.opciones.length <= 2;
         cuerpo = '<div class="act-pregunta act-encaja"><p class="act-eyebrow"><i class="fas fa-circle-question" aria-hidden="true"></i> ' + nombre + (i + 1) + ' de ' + b.preguntas.length + '</p>' +
@@ -837,26 +1300,42 @@
   };
   /* La letra de la página baja de a medio punto hasta que todo cabe (nunca desplazamiento); el texto breve crece hasta 19 px. */
   function encajarAct(pg) {
-    var c = pg.querySelector('.act-encaja');
+    var c = pg.querySelector('.act-encaja'), ops = pg.querySelector('.act-opciones');
     if (!c) return;
     pg.classList.remove('sin-arte');
-    for (var fs = 19; fs >= 11.5; fs -= 0.5) {
+    quitarRelleno(c);
+    if (ops) ops.classList.toggle('en-fila', ops.children.length <= 2);
+    for (var fs = datos.sinHuecos ? 22 : 19; fs >= 11.5; fs -= 0.5) {
       c.style.setProperty('--fs', fs + 'px');
-      if (c.scrollHeight <= c.clientHeight + 1 && pg.scrollHeight <= pg.clientHeight + 1) return;
+      if (c.scrollHeight <= c.clientHeight + 1 && pg.scrollHeight <= pg.clientHeight + 1) { if (!ops && c.classList.contains('act-hoja')) rellenar(c); return; }
       if (fs <= 14 && !pg.classList.contains('sin-arte') && pg.querySelector('.act-figura')) { pg.classList.add('sin-arte'); fs = 19.5; }
+      /* Opciones largas que no caben una debajo de otra: van en dos columnas. */
+      else if (fs <= 12.5 && ops && !ops.classList.contains('en-fila')) { ops.classList.add('en-fila'); fs = 16.5; }
     }
   }
   B.actividad.activar = function (b, k, el) {
     var pags = el.querySelectorAll('.act-pagina'), puntos = el.querySelectorAll('.act-punto'), ant = el.querySelector('.act-ant'), sig = el.querySelector('.act-sig');
-    var pos = 0, resueltas = {};
+    var pos = 0, resueltas = {}, leidas = {};
     function pregunta(n) { var p = b.paginas[n]; return p && p[0] === 'q' ? Number(p.slice(1)) : null; }
-    /* No se pasa de una pregunta sin acertarla («no lo deja pasar si no responde lo que es»). */
-    function cerrada(n) { for (var m = 0; m < n; m++) { var q = pregunta(m); if (q !== null && !resueltas[q]) return true; } return false; }
+    /* No se pasa de una pregunta sin acertarla («no lo deja pasar si no responde lo que es») ni, con datos.completar, de una
+       página sin leerla completa. */
+    function cerrada(n) { for (var m = 0; m < n; m++) { var q = pregunta(m); if (q !== null ? !resueltas[q] : datos.completar && !leidas[m]) return true; } return false; }
+    /* Qué falta para avanzar desde la página actual (datos.completar): la respuesta correcta o alguna parte de la lectura. */
+    function falta() {
+      var q = pregunta(pos);
+      if (q !== null && !resueltas[q]) return { texto: 'Aún no has completado esta página: ' + (b.modo === 'clasifica' ? 'ubica la afirmación en su categoría correcta' : 'elige la respuesta correcta') + ' para poder avanzar.' };
+      var L = !leidas[pos] && faltaLeer(pags[pos]);
+      return L ? { texto: textoFalta(L, 'esta página'), pulsar: L.sig } : null;
+    }
+    function estado() {
+      puntos.forEach(function (p, j) { p.disabled = cerrada(j); });
+      if (datos.completar) { sig.disabled = pos === pags.length - 1; candado(sig, !sig.disabled && falta()); }
+    }
     function ir(n) {
       if (cerrada(n)) return;
       pos = n;
       pags.forEach(function (p, j) { p.hidden = j !== n; });
-      puntos.forEach(function (p, j) { p.setAttribute('aria-current', j === n ? 'step' : 'false'); p.classList.toggle('pasado', j < n); p.disabled = cerrada(j); });
+      puntos.forEach(function (p, j) { p.setAttribute('aria-current', j === n ? 'step' : 'false'); p.classList.toggle('pasado', j < n); });
       var q = pregunta(n);
       ant.disabled = n === 0;
       sig.disabled = n === pags.length - 1 || (q !== null && !resueltas[q]);
@@ -864,20 +1343,37 @@
       if (b.paginas[n][0] !== 'q') {
         var hoja = pg.querySelector('.act-hoja');
         if (!dosificar(hoja, function () { encajarAct(pg); })) encajarAct(pg);
+        if (!faltaLeer(pg)) leidas[n] = true;
       } else encajarAct(pg);
+      estado();
       reanimar(pg);
+    }
+    el.addEventListener('lectura-completa', function () { if (pregunta(pos) === null) leidas[pos] = true; estado(); });
+    var intentos = 0, aciertos = 0, R = datos.retro;
+    /* Qué ofrece el botón de la tarjeta de acierto: la página que sigue. */
+    function rotuloSiguiente() {
+      var p = b.paginas[pos + 1];
+      return !p ? 'Terminar' : p[0] === 'q' ? 'Siguiente pregunta' : p[0] === 'x' ? 'Siguiente situación' : p === 'cierre' ? 'Ir al cierre' : 'Continuar';
     }
     el.querySelectorAll('.act-opcion').forEach(function (o) {
       o.addEventListener('click', function () {
         var i = Number(o.dataset.q), q = b.preguntas[i], op = q.opciones[Number(o.dataset.j)], aviso = o.closest('.act-pregunta').querySelector('.act-aviso');
         var propia = (op.cab !== null && op.cab !== undefined ? seg(op.cab) + '\n' : '') + (op.retro ? segs(op.retro) : '');
-        var general = (q.cab_retro !== null && q.cab_retro !== undefined ? seg(q.cab_retro) + '\n' : '') + segs(q.retro || []);
+        var cabRetro = q.cab_retro !== null && q.cab_retro !== undefined ? seg(q.cab_retro) : '', retroGeneral = segs(q.retro || []);
+        var general = [cabRetro, retroGeneral].filter(Boolean).join('\n');
         var fuente = (q.fuente || []).length ? '\n' + segs(q.fuente) : '';
         var clave = q.respuesta !== null && q.respuesta !== undefined ? seg(q.respuesta) : '';
+        var chip = R ? R.rotulo + ' · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1) : '';
+        var categoria = b.modo === 'clasifica' ? (op.seg !== undefined && op.seg !== null ? sinMarca(seg(op.seg)) : op.texto || '') : '';
+        /* En el orden de la ficha: «Retroalimentación automática», la de la opción, la general y «Respuesta correcta: …». */
+        var textoBien = [cabRetro, propia.trim(), retroGeneral, clave].filter(Boolean).join('\n') + fuente;
+        var textoMal = ((propia.trim() || general) + fuente).trim();
         if (resueltas[i]) {
           /* Repaso: cada opción abre su propia retroalimentación. */
-          var t = op.ok ? [propia.trim(), general.trim(), clave].filter(Boolean).join('\n') + fuente : (propia || general) + fuente;
-          if (t.trim()) leer((op.ok ? 'Respuesta correcta · ' : 'Repaso · ') + 'opción ' + op.letra, t, null, o);
+          var t = op.ok ? textoBien : textoMal;
+          if (R && (t.trim() || op.meme || (op.ok && categoria))) tarjeta({ tipo: op.ok ? 'bien' : op.meme ? 'meme' : 'mal', idx: op.ok ? aciertos : intentos, meme: op.meme, chip: chip,
+            letra: op.letra, texto: t, boton: 'Volver a la pregunta', desde: o, clasifica: b.modo === 'clasifica', categoria: categoria });
+          else if (t.trim()) leer((op.ok ? 'Respuesta correcta · ' : 'Repaso · ') + 'opción ' + op.letra, t, null, o);
           return;
         }
         if (op.ok) {
@@ -887,24 +1383,32 @@
           o.closest('.act-opciones').classList.add('resuelta');
           aviso.className = 'act-aviso bien';
           aviso.innerHTML = visto + ' ¡Correcto! ' + (pos < pags.length - 1 ? 'Ya puedes continuar.' : '');
-          marcar(k + '-' + i);
+          marcarYa(k + '-' + i);
           sig.disabled = pos === pags.length - 1;
-          puntos.forEach(function (p, j) { p.disabled = cerrada(j); });
-          var texto = [propia.trim(), general.trim(), clave].filter(Boolean).join('\n') + fuente;
-          if (texto.trim()) leer('¡Correcto! · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1), texto, null, o);
+          estado();
+          /* Solo la respuesta correcta deja avanzar: su tarjeta lleva el botón a la página siguiente. */
+          if (R) tarjeta({ tipo: 'bien', idx: aciertos++, chip: chip, letra: op.letra, texto: textoBien, desde: o, clasifica: b.modo === 'clasifica',
+            categoria: categoria, boton: rotuloSiguiente(), alBoton: function () { if (pos < pags.length - 1) ir(pos + 1); } });
+          else if (textoBien.trim()) leer('¡Correcto! · ' + (b.modo === 'clasifica' ? 'Afirmación ' : 'Pregunta ') + (i + 1), textoBien, null, o);
         } else {
           o.classList.remove('error'); void o.offsetWidth; o.classList.add('error', 'intentada');
           o.querySelector('.act-marca').innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i>';
           aviso.className = 'act-aviso mal';
-          aviso.textContent = 'Respuesta incorrecta. ' + ((propia || general).trim() ? 'Lee la retroalimentación y vuelve a intentarlo.' : 'Vuelve a intentarlo.');
-          var r = (propia || general) + fuente;
-          if (r.trim()) leer('Respuesta incorrecta · opción ' + op.letra, r, null, o);
+          aviso.textContent = 'Respuesta incorrecta. ' + (textoMal || op.meme ? 'Lee la retroalimentación y vuelve a intentarlo.' : 'Vuelve a intentarlo.');
+          /* Cada error trae otra imagen: el meme aprobado de ese error o, si no lo hay, otro personaje de reacción. */
+          if (R) tarjeta({ tipo: op.meme ? 'meme' : 'mal', idx: intentos++, meme: op.meme, chip: chip, letra: op.letra, texto: textoMal, desde: o,
+            clasifica: b.modo === 'clasifica', boton: 'Vuelve a intentarlo' });
+          else if (textoMal) leer('Respuesta incorrecta · opción ' + op.letra, textoMal, null, o);
         }
       });
     });
     puntos.forEach(function (p) { p.addEventListener('click', function () { ir(Number(p.dataset.ir)); }); });
     ant.addEventListener('click', function () { ir(Math.max(0, pos - 1)); });
-    sig.addEventListener('click', function () { ir(Math.min(pags.length - 1, pos + 1)); });
+    sig.addEventListener('click', function () {
+      var f = datos.completar && falta();
+      if (f) { avisar(raiz.querySelector('.escenario'), f.texto, f.pulsar); return; }
+      ir(Math.min(pags.length - 1, pos + 1));
+    });
     ir(0);
     if (document.fonts) document.fonts.ready.then(function () { encajarAct(pags[pos]); });
     window.addEventListener('resize', function () { encajarAct(pags[pos]); });
@@ -939,6 +1443,7 @@
   document.addEventListener('fullscreenchange', estadoPantalla);
   document.addEventListener('webkitfullscreenchange', estadoPantalla);
   window.addEventListener('resize', zoomPantalla);
+  window.addEventListener('resize', function () { organizarGiros(); encajarTarjetas(); ajustarExtractos(); });
 
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
@@ -1024,14 +1529,43 @@
       puntos.forEach(function (p, j) { p.setAttribute('aria-current', j === i ? 'step' : 'false'); p.classList.toggle('pasado', j < i); });
       ant.disabled = i === 0; sig.disabled = i === paginas.length - 1;
       var pg = paginas[i]; reanimar(pg); marcar(k + '-p' + i);
-      pg.querySelectorAll('.caso-encaja').forEach(function (c) { encajarTexto(pg, c); });
+      encajarCaso(pg, true);
+      if (datos.completar) candado(sig, !sig.disabled && !!faltaLeer(pg));
     }
-    puntos.forEach(function (p) { p.addEventListener('click', function () { ir(Number(p.dataset.ir)); }); });
+    /* Al entrar a la página, el texto que no cabe ni a 15 px se reparte en partes; al cambiar el tamaño, solo se reencaja. */
+    function encajarCaso(pg, entrada) {
+      pg.querySelectorAll('.caso-encaja').forEach(function (c) {
+        var partido = [].some.call(c.children, function (x) { return x.classList.contains('lectura-paginas'); });
+        if (partido && !entrada) return;
+        if (partido) { quitarPartes(c); c.style.removeProperty('--fs'); }
+        encajarTexto(pg, c);
+        if (c.scrollHeight > c.clientHeight + 1) { quitarRelleno(c); pg.classList.add('sin-arte'); partirBloques(c); }
+      });
+    }
+    el.addEventListener('lectura-completa', function () { if (datos.completar) candado(sig, false); });
+    /* Con datos.completar, no se pasa a otra página del caso sin leer todas las partes de la actual. */
+    function pendiente(j) {
+      var L = j > pos && faltaLeer(paginas[pos]);
+      if (L) avisar(raiz.querySelector('.escenario'), textoFalta(L, 'esta página'), L.sig);
+      return !!L;
+    }
+    puntos.forEach(function (p) { p.addEventListener('click', function () { var j = Number(p.dataset.ir); if (!pendiente(j)) ir(j); }); });
     ant.addEventListener('click', function () { ir(Math.max(0, pos - 1)); });
-    sig.addEventListener('click', function () { ir(Math.min(paginas.length - 1, pos + 1)); });
+    sig.addEventListener('click', function () { if (!pendiente(pos + 1)) ir(Math.min(paginas.length - 1, pos + 1)); });
     el.querySelectorAll('.caso-tarea').forEach(function (t) {
       t.addEventListener('click', function () { t.setAttribute('aria-pressed', 'true'); t.classList.add('visto'); marcar(t.dataset.id); });
     });
+    /* «Su tarea» junto a la respuesta (Esteban, 28/10/2026: «no dejar esos espacios en blanco»): la lista crece hasta 17 px y,
+       si aún sobra espacio, lleva la ilustración de relleno debajo. */
+    function encajarRecuerde() {
+      var a = el.querySelector('.caso-recuerde'), ol = a && a.querySelector('ol');
+      if (!ol || !datos.sinHuecos || !a.getClientRects().length) return;
+      quitarRelleno(a);
+      for (var fs = 17; fs >= 12; fs -= 0.5) { ol.style.fontSize = fs + 'px'; if (a.scrollHeight <= a.clientHeight + 1) break; }
+      rellenar(a);
+    }
+    paginas.forEach(function (pg) { if (pg.classList.contains('pag-respuesta')) new MutationObserver(function () { if (!pg.hidden) encajarRecuerde(); }).observe(pg, { attributes: true, attributeFilter: ['hidden'] }); });
+    window.addEventListener('resize', encajarRecuerde);
     var t = el.querySelector('textarea'), out = el.querySelector('.caso-cuenta output'), barra = el.querySelector('.caso-barra i'), clave = 'ap-respuesta-' + (datos.unit || 1) + '-' + datos.lesson + '-' + actual;
     try { t.value = localStorage.getItem(clave) || ''; } catch (e) { /* sin almacenamiento */ }
     function contar() {
@@ -1049,7 +1583,7 @@
     });
     ir(0);
     /* Las tipografías llegan después: se vuelve a encajar el texto de la página visible. */
-    function reencajar() { var pg = paginas[pos]; pg.querySelectorAll('.caso-encaja').forEach(function (c) { encajarTexto(pg, c); }); }
+    function reencajar() { encajarCaso(paginas[pos], false); }
     if (document.fonts) document.fonts.ready.then(reencajar);
     window.addEventListener('resize', reencajar);
   };
@@ -1097,10 +1631,12 @@
 
   /* ---------- Escena ---------- */
   function render() {
-    escena = datos.scenes[actual]; vistos = {}; retornoFoco = null;
-    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
+    escena = datos.scenes[actual]; vistos = {}; retornoFoco = null; generacion++; ultimaLectura = null;
+    total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : tablaBreve(b) ? 0 : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
     var ctx = escasa(escena) ? contexto(0) : null;
     var guia = ctx ? (ctx.lista.length > 1 ? 'Elige cada punto y lee su contenido junto a la ilustración.' : 'Lee el contenido junto a la ilustración.') : guias[escena.layout === 'balanza' ? 'fichas' : escena.layout];
+    /* La tabla breve se ve completa: no hay pestañas que elegir. */
+    if (escena.layout === 'tabla' && escena.bloques.length && escena.bloques.every(tablaBreve)) guia = 'Lee la tabla completa.';
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
     var conAvance = total > 0 && !(ctx && ctx.lista.length === 1);
     var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span>' + guia + '</span></p>' +
@@ -1120,8 +1656,25 @@
     }).join('') + '</ul>';
     if (escena.tail.length) cuerpo += '<p class="caja-clave' + (conAvance ? ' tras-completar" hidden' : '"') + '><span class="clave-rotulo"><i class="fas fa-star" aria-hidden="true"></i> ' +
       (conAvance ? 'Idea clave desbloqueada' : 'Idea clave') + '</span>' + rico(segs(escena.tail)) + '</p>';
-    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '');
-    raiz.innerHTML = cab + '<section class="escenario" aria-label="Escena ' + (actual + 1) + '">' + cuerpo + '<div class="lector" hidden></div></section>' +
+    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '') + (datos.sinHuecos ? ' sin-huecos' : '');
+    /* Ilustración de la escena en un lugar que varía (Estándares interamericanos; Esteban, 28/10/2026: «a la izquierda, a la
+       derecha, en el medio o atrás… de forma embebida para que no sea invasivo»). «arte» = {img, pos}: «izq» o «der», una columna
+       propia junto a la mediación; «fondo», la ilustración tenue en la esquina inferior, detrás y sin recibir clics; «centro», en
+       el nodo central del mapa mental. En las mediaciones que ya muestran la ilustración (texto con ilustración, fichas), «izq»
+       la pasa a la izquierda del texto. Sin «arte», la escena queda como antes. */
+    var claseArte = '';
+    if (datos.tituloFuera && escena.layout === 'esquema') { /* la ilustración es la raíz del mapa conceptual */ }
+    else if (arteEn('izq') || arteEn('der')) {
+      if (IMAGEN[actual]) claseArte = ' arte-volteado';
+      else {
+        cuerpo = '<figure class="arte-escena" aria-hidden="true"><img src="' + srcImagen(escena.arte.img) + '" alt=""></figure><div class="escenario-contenido">' + cuerpo + '</div>';
+        claseArte = ' arte-lado arte-' + escena.arte.pos;
+      }
+    } else if (arteEn('fondo')) {
+      cuerpo = '<figure class="arte-escena arte-fondo-fig" aria-hidden="true"><img src="' + srcImagen(escena.arte.img) + '" alt=""></figure>' + cuerpo;
+      claseArte = ' arte-fondo';
+    }
+    raiz.innerHTML = cab + '<section class="escenario' + claseArte + '" aria-label="Escena ' + (actual + 1) + '">' + cuerpo + '<div class="lector" hidden></div></section>' +
       (embebido ? '' : '<nav class="nav-local" aria-label="Escenas de la lección"><button type="button" data-ir="-1"><i class="fas fa-arrow-left" aria-hidden="true"></i> Anterior</button>' +
         '<span>' + (actual + 1) + ' de ' + datos.scenes.length + '</span><button type="button" data-ir="1">Siguiente <i class="fas fa-arrow-right" aria-hidden="true"></i></button></nav>');
     raiz.querySelectorAll('.bloque').forEach(function (el) {
@@ -1134,6 +1687,10 @@
     raiz.querySelector('.lector').addEventListener('click', function (e) { if (e.target.classList.contains('lector')) cerrarLector(); });
     raiz.querySelector('.pantalla-completa').addEventListener('click', pantallaCompleta);
     estadoPantalla();
+    organizarGiros(); encajarTarjetas(); ajustarExtractos();
+    /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
+       fuente de reserva podía quedar cortado. */
+    if (document.fonts) document.fonts.ready.then(function () { window.dispatchEvent(new Event('resize')); });
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;
