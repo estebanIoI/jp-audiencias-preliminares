@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video del caso · Unidad 2</title>
+<link rel="stylesheet" href="../comun/assets/vendor/fontawesome.min.css">
+<link rel="stylesheet" href="../comun/assets/vendor/solid.min.css">
+<link rel="stylesheet" href="video.css?v=e9a21f81">
+<style>:root{--teal:#2E6377;--marino:#07415C;--oxido:#B55D41;--coral:#FF6936;--crema:#FFE1D7;--niebla:#CAE9E4; --hielo:#E9F6F4;--fondo:#FFFFFF;--piso:#CAE9E4;--tinta:#07415C;--clave-fondo:#FFE1D7;--clave-borde:#FF6936}</style>
+</head>
+<body>
+<!-- Reproductor de los casos en video (reuniones con Juan del 27 y del 30/10/2026).
+     index.html?video=ID muestra un solo video para el iframe de Genially: por defecto la versión sin lenguaje de señas y un
+     botón para verla con lenguaje de señas, cada una con sus subtítulos. Sin ?video, la lista de la unidad para revisión;
+     con &revision=1, además, el estado y las rutas previstas. Las rutas son relativas a esta carpeta (medios/…), para que
+     viajen dentro del paquete exportado de Genially y del SCORM sin URL externas. -->
+<main class="video-ova" data-video>
+  <header class="video-cab" hidden>
+    <p class="video-titulo"></p>
+    <span class="video-estado" hidden></span>
+  </header>
+  <div class="video-marco">
+    <video controls preload="metadata" playsinline hidden>
+      <source type="video/mp4">
+      <track kind="subtitles" srclang="es" label="Español" default>
+    </video>
+    <div class="video-pendiente" role="status" aria-live="polite" hidden>
+      <i class="fas fa-clapperboard" aria-hidden="true"></i>
+      <p class="pendiente-titulo">Video en producción</p>
+      <p class="pendiente-detalle"></p>
+      <p class="pendiente-ruta" hidden></p>
+    </div>
+  </div>
+  <div class="video-opciones" role="group" aria-label="Versión del video">
+    <button type="button" class="video-version" data-version="normal" aria-pressed="true"><i class="fas fa-play" aria-hidden="true"></i> Ver sin lenguaje de señas</button>
+    <button type="button" class="video-version" data-version="senas" aria-pressed="false"><i class="fas fa-hands-asl-interpreting" aria-hidden="true"></i> Ver con lenguaje de señas</button>
+    <span class="video-cc" hidden><i class="fas fa-closed-captioning" aria-hidden="true"></i> Subtítulos en español</span>
+  </div>
+  <nav class="video-lista" aria-label="Videos de la unidad" hidden></nav>
+</main>
+<script type="application/json" id="videos">[
+ {
+  "id": "u2-la-fiscal-recursiva",
+  "unidad": 2,
+  "leccion": 3,
+  "escena": 22,
+  "ubicacion": "Lección 3 · Análisis de caso: La Fiscal recursiva (después de la escena 22)",
+  "titulo": null,
+  "estado": "confirmado",
+  "normal": {
+   "src": "medios/u2-la-fiscal-recursiva.mp4",
+   "subtitulos": "medios/u2-la-fiscal-recursiva.es.vtt"
+  },
+  "senas": {
+   "src": "medios/u2-la-fiscal-recursiva-lsc.mp4",
+   "subtitulos": "medios/u2-la-fiscal-recursiva-lsc.es.vtt"
+  }
+ },
+ {
+  "id": "u2-ellos-son-victimas",
+  "unidad": 2,
+  "leccion": 3,
+  "escena": 24,
+  "ubicacion": "Lección 3 · Análisis de caso: Ellos son victimas (después de la escena 24)",
+  "titulo": null,
+  "estado": "confirmado",
+  "normal": {
+   "src": "medios/u2-ellos-son-victimas.mp4",
+   "subtitulos": "medios/u2-ellos-son-victimas.es.vtt"
+  },
+  "senas": {
+   "src": "medios/u2-ellos-son-victimas-lsc.mp4",
+   "subtitulos": "medios/u2-ellos-son-victimas-lsc.es.vtt"
+  }
+ }
+]</script>
+<script src="video.js?v=e9a21f81"></script>
+</body>
+</html>

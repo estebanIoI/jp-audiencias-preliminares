@@ -1,0 +1,10 @@
+Medios de los casos en video · Unidad 5
+
+Aquí van los archivos definitivos que entregue JP o la rama audiovisual, con estos nombres exactos (rutas relativas,
+portables dentro del paquete de Genially y del SCORM):
+- u5-los-chapulines (Lección 2 · Caso: Los Chapulines (después de la escena 5)): medios/u5-los-chapulines.mp4, medios/u5-los-chapulines.es.vtt, medios/u5-los-chapulines-lsc.mp4, medios/u5-los-chapulines-lsc.es.vtt
+
+Formato previsto: video MP4 (H.264 + AAC) y subtítulos WebVTT en español (.vtt, UTF-8).
+El reproductor los toma en cuanto están aquí; mientras falten, dice «Video en producción». Los copia
+herramientas/integrar_entregas.py (solo lo aprobado). Después: cambiar el estado del caso a «entregado», volver a
+generar el reproductor y probar ambas versiones con subtítulos en el iframe y en el paquete antes de declararlos integrados.

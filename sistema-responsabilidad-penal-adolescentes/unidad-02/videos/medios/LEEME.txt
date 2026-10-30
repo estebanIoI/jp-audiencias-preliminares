@@ -1,0 +1,11 @@
+Medios de los casos en video · Unidad 2
+
+Aquí van los archivos definitivos que entregue JP o la rama audiovisual, con estos nombres exactos (rutas relativas,
+portables dentro del paquete de Genially y del SCORM):
+- u2-la-fiscal-recursiva (Lección 3 · Análisis de caso: La Fiscal recursiva (después de la escena 22)): medios/u2-la-fiscal-recursiva.mp4, medios/u2-la-fiscal-recursiva.es.vtt, medios/u2-la-fiscal-recursiva-lsc.mp4, medios/u2-la-fiscal-recursiva-lsc.es.vtt
+- u2-ellos-son-victimas (Lección 3 · Análisis de caso: Ellos son victimas (después de la escena 24)): medios/u2-ellos-son-victimas.mp4, medios/u2-ellos-son-victimas.es.vtt, medios/u2-ellos-son-victimas-lsc.mp4, medios/u2-ellos-son-victimas-lsc.es.vtt
+
+Formato previsto: video MP4 (H.264 + AAC) y subtítulos WebVTT en español (.vtt, UTF-8).
+El reproductor los toma en cuanto están aquí; mientras falten, dice «Video en producción». Los copia
+herramientas/integrar_entregas.py (solo lo aprobado). Después: cambiar el estado del caso a «entregado», volver a
+generar el reproductor y probar ambas versiones con subtítulos en el iframe y en el paquete antes de declararlos integrados.

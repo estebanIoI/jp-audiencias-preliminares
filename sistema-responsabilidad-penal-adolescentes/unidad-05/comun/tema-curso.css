@@ -1,0 +1,56 @@
+/* Sistema de Responsabilidad Penal para Adolescentes · colores de la PORTADA de la maqueta de Genially del curso
+   Leídos con geniallyAPI el 30/10/2026 en «PORTADA» de «Unidad 1 - SISTEMA DE RESPONSABILIDAD» (AGENTS.md, paleta del curso):
+     naranja #FF6936 (fondo, etiqueta «Curso»)   menta #CAE9E4 (recuadro, aro del menú)   petróleo #07415C (título, «Comenzar»)
+     blanco
+   Tintes y mezclas de esos colores: menta claro #E9F6F4, naranja claro #FFE1D7, petróleo medio #2E6377 (petróleo con menta) y
+   óxido #B55D41 (naranja con petróleo). Contraste: el naranja va en fondos, bordes y botones de letra grande; los rótulos
+   pequeños van en petróleo. Se carga después de base.css: cambia colores, el tamaño del marco (Juan ocupa todo el recuadro de
+   la plantilla: 1113 × 448) y suma la animación de siluetas de niños de Juan («esta animación es en CSS… simulando niños»). */
+:root{
+  --teal:#2E6377;--marino:#07415C;--oxido:#B55D41;--coral:#FF6936;--crema:#FFE1D7;--niebla:#CAE9E4;
+  --hielo:#E9F6F4;--fondo:#FFFFFF;--piso:#CAE9E4;--tinta:#07415C;--clave-fondo:#FFE1D7;--clave-borde:#FF6936
+}
+.ova{border-color:#CAE9E4;box-shadow:0 6px 18px #07415C1f}
+
+/* Sobre los paneles petróleo, los rótulos claros van en menta. */
+.panel .lectura-eyebrow,.panel-texto .lectura-eyebrow,.tabla-enc,.panel .panel-vacio i,.panel-fichas .panel-vacio i,.chips li i{color:#CAE9E4}
+
+/* Tarjetas y columnas: tintes de la portada (menta, naranja claro, blanco). */
+.giro:nth-child(4n+2) .frente{background:#CAE9E466;border-color:#2E6377;box-shadow:0 5px 0 #2E6377}
+.giro:nth-child(4n+3) .frente{background:#FFE1D7;border-color:#FF6936;box-shadow:0 5px 0 #FF6936}
+.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#07415C55;box-shadow:0 5px 0 #07415C55}
+.columna.tono1{background:#CAE9E466;border-color:#2E6377;box-shadow:0 6px 0 #2E6377}
+.columna.tono2{background:#FFE1D7;border-color:#FF6936;box-shadow:0 6px 0 #FF6936}
+.columna.tono3{background:#FFFFFF;border-color:#07415C55;box-shadow:0 6px 0 #07415C55}
+
+/* Fondos de lámina y mapa, caminos y líneas. */
+.lamina{background:linear-gradient(180deg,#E9F6F4 0%,#FFFFFF 75%)}
+.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FFFFFF 40%,#E9F6F4 78%)}
+.camino,.linea .camino{border-top-color:#FF6936}
+.mapa-lineas line{stroke:#FF6936}
+
+/* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
+.ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
+
+/* Caja clave de Juan con los colores del curso: fondo naranja claro y borde naranja. */
+.caja-clave{background:var(--clave-fondo);border-color:var(--clave-borde)}
+
+/* Marco de este curso (Juan, maquetas de SRPA): el HTML ocupa todo el recuadro de la plantilla, 1113 × 448 en la diapositiva
+   de 1200 × 675. En pantalla completa la escena conserva ese marco y crece con zoom (motor: datos.marco). */
+html.en-pantalla-completa .ova{width:1113px;height:448px}
+
+/* Siluetas de niños que caminan al pie de la escena (Juan, reunión del 30/10/2026: «le coloqué una animación… en CSS…
+   simulando niños»; leccion1-parte2.html). Muy tenues (8 %), en petróleo, detrás del contenido y sin recibir clics; se
+   detienen con «reducir movimiento». */
+.ova{isolation:isolate}
+.ova:not(.layout-actividad):not(.layout-puntos)::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:64px;pointer-events:none;z-index:-1;opacity:.08;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 150' fill='%2307415C'%3E%3Ccircle cx='50' cy='50' r='12'/%3E%3Cpath d='M35,130 L45,80 L30,70 M45,80 L60,80 L65,130 L55,130 L50,100 L45,130 Z'/%3E%3Ccircle cx='90' cy='55' r='10'/%3E%3Cpath d='M80,130 L85,85 L70,85 M85,85 L95,85 L100,130 L90,130 L85,100 L80,130 Z'/%3E%3Ccircle cx='200' cy='45' r='12'/%3E%3Cpath d='M180,130 L195,85 L180,70 M195,85 L205,85 L210,115 L225,130 M205,85 L215,75 M190,130 L200,105 L180,130 Z'/%3E%3Ccircle cx='320' cy='50' r='11'/%3E%3Cpath d='M300,130 L315,80 L295,65 M315,80 L325,80 L330,130 L320,130 L315,100 L305,130 Z'/%3E%3Ccircle cx='350' cy='30' r='8'/%3E%3C/svg%3E");
+  background-size:170px 64px;background-repeat:repeat-x;background-position:0 100%;animation:siluetas-srpa 30s linear infinite
+}
+@keyframes siluetas-srpa{from{background-position:0 100%}to{background-position:170px 100%}}
+@media (prefers-reduced-motion:reduce){.ova::after{animation:none}}
+
+/* Enlaces de la ficha («https://revistas.usc.gal/…», «https://www.scielo.org.mx/…»): se parten donde haga falta, nunca se
+   cortan (QA del 30/10/2026: letra cortada en U1-L2-E16 y U2-L1-E02). */
+.lectura-texto,.esquema-extracto,.giro-extracto,.rama-extracto,.esquema-rotulo,.giro-rotulo,.celda-rotulo,.leyenda-rotulo{overflow-wrap:anywhere}
