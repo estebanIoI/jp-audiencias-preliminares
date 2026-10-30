@@ -1,0 +1,50 @@
+/* Audiencias preliminares y medidas de aseguramiento · colores de la PORTADA de la plantilla de Genially del curso
+   Leídos con geniallyAPI el 29/10/2026 en «Portada» de la creación de la Unidad 1 (las de U2–U4 son copias):
+     menta #C5E9E2 (fondo)        coral #EF767F (franja del título)        petróleo #003F5E («Curso», «Comenzar»)
+     verde azulado #569689 (detalle de la franja)                         blanco
+   Los claros son tintes de esos colores. Contraste: menta y coral van en fondos, bordes, barras y círculos; nunca en letra
+   pequeña ni bajo texto blanco. Se carga después de base.css (lo enlaza herramientas/pulir_cursos.py) y solo cambia colores. */
+:root{
+  --teal:#569689;--marino:#003F5E;--oxido:#003F5E;--coral:#EF767F;--crema:#FBDCDE;--niebla:#E2F4F0;
+  --hielo:#F0F9F7;--fondo:#FFFFFF;--piso:#C5E9E2;--tinta:#003F5E;--clave-fondo:#F0F9F7;--clave-borde:#EF767F
+}
+.ova{border-color:#C5E9E2;box-shadow:0 6px 18px #003F5E1f}
+
+/* Sobre los paneles oscuros, los rótulos claros van en menta. */
+.panel .lectura-eyebrow,.panel-texto .lectura-eyebrow,.tabla-enc,.panel .panel-vacio i,.panel-fichas .panel-vacio i,.chips li i{color:#C5E9E2}
+
+/* Tarjetas y columnas: tintes de la portada (menta, coral claro, petróleo claro y blanco). */
+.giro:nth-child(4n+2) .frente{background:#C5E9E2;border-color:#569689;box-shadow:0 5px 0 #569689}
+.giro:nth-child(4n+3) .frente{background:#FBDCDE;border-color:#EF767F;box-shadow:0 5px 0 #EF767F}
+.giro:nth-child(4n+4) .frente{background:#FFFFFF;border-color:#003F5E55;box-shadow:0 5px 0 #003F5E55}
+.columna.tono1{background:#C5E9E2;border-color:#569689;box-shadow:0 6px 0 #569689}
+.columna.tono2{background:#FBDCDE;border-color:#EF767F;box-shadow:0 6px 0 #EF767F}
+.columna.tono3{background:#FFFFFF;border-color:#003F5E55;box-shadow:0 6px 0 #003F5E55}
+
+/* Fondos de lámina y mapa, caminos y líneas: menta de la portada. */
+.lamina{background:linear-gradient(180deg,#E2F4F0 0%,#FFFFFF 75%)}
+.mapa{background:radial-gradient(circle at 50% 52%,#FFFFFF 0,#FFFFFF 40%,#E2F4F0 78%)}
+.camino,.linea .camino{border-top-color:#569689}
+.mapa-lineas line{stroke:#569689}
+
+/* Emparejar, notas, casos y referencias. */
+.def{border-color:#C5E9E2}
+.def.acierto,.caso-tarea.visto{background:#F0F9F7}
+.def.sobre{background:#003F5E14}
+.empareja.amplio .def-ranura{border-color:#C5E9E2;background:#FFFFFF}
+.nota-pie{color:var(--tinta)}
+mark.ref-texto{background:#FBDCDE;box-shadow:inset 0 -2px 0 #EF767F}
+.confeti i:nth-child(5n+1){background:#EF767F}
+@keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #003F5E00}50%{box-shadow:0 0 0 6px #003F5E33}}
+
+/* Sombras con el petróleo de la portada (el motor las trae en su verde por defecto, fuera de la paleta: qa_paleta). */
+.panel,.panel-fichas{box-shadow:0 8px 20px #003F5E33}
+.avance.completo output{box-shadow:0 0 0 0 #003F5E66}
+@keyframes brillo{0%{box-shadow:0 0 0 0 #003F5E66}100%{box-shadow:0 0 0 12px #003F5E00}}
+.caso-respuesta textarea:focus{box-shadow:0 0 0 3px #003F5E22}
+
+/* Ilustraciones nítidas al escalarse en Genially: sin sombra. */
+.ctx-arte img,.arte-escena img,.celda-foto img,.puntos-lienzo img,.act-figura img,.caso-figura img,.def-ilus img{filter:none}
+
+/* Caja clave de Juan con los colores del curso: menta muy claro y borde coral. */
+.caja-clave{background:var(--clave-fondo);border-color:var(--clave-borde)}
