@@ -90,7 +90,8 @@
     if (datos.partirComas) oraciones = oraciones.reduce(function (a, o) {
       if (o.length <= lim * 1.3) return a.concat([o]);
       var CLAUSULA = /,\s+(?=(?:por el contrario|ya que|es decir|lo cual|lo que|según|sino|pues|porque|mientras|aunque|toda vez que|en tanto|así como|de manera que|dado que|puesto que|sin embargo|no obstante|por lo tanto|por tanto|en consecuencia|razón por la cual|con lo cual|además|igualmente|siempre que|siempre y cuando|tal como|de acuerdo con|conforme|en el que|en la que|en los que|en las que|en donde|donde|cuando|quienes?|el cual|la cual|los cuales|las cuales|cuy[oa]s?|con el fin|a fin de|para que|de modo que|de forma que|en especial|particularmente|esto es|en (?:este|ese|tal) sentido|por ello|por esta razón|de ahí que|pero|o sea)\b)/gi;
-      var cortes = [], comas = [], m, re = /,\s+/g;
+      /* También los dos puntos que abren una cita o una enumeración («en dos grandes categorías: “…”»). */
+      var cortes = [], comas = [], m, re = /[,:]\s+/g;
       CLAUSULA.lastIndex = 0;
       while ((m = CLAUSULA.exec(o))) cortes.push(m.index + 1);
       while ((m = re.exec(o))) comas.push(m.index + 1);
@@ -100,6 +101,8 @@
         /* Primero una coma de cláusula dentro del tramo; si no hay, cualquier coma dentro del tramo. */
         var dentro = cortes.filter(enVentana);
         if (!dentro.length) dentro = comas.filter(enVentana);
+        /* Sin coma en el tramo, la más cercana con un margen mayor: una oración de 658 caracteres quedaba entera (U1-L3-E07). */
+        if (!dentro.length) dentro = comas.filter(function (c) { return c - desde >= lim * 0.25 && c - desde <= lim * 1.3; });
         if (!dentro.length) break;
         var c = dentro.reduce(function (b, x) { return Math.abs(x - desde - lim * 0.85) < Math.abs(b - desde - lim * 0.85) ? x : b; });
         piezas.push(o.slice(desde, c).trim()); desde = c;
@@ -277,18 +280,19 @@
   }
   /* El texto crece hasta llenar su caja (máx. 22 px) y se reduce si no cabe. Un texto breve lleva encima el objeto del
      punto en grande; si con él el texto quedaría por debajo de 16 px, el objeto se retira; si ni así cabe, la imagen. */
-  function encajarTexto(cont, caja) {
+  /* «minimo»: letra más pequeña aceptable (12,5 px por omisión); la bitácora del marco ancho pide 14 y, si no cabe, se reparte en partes. */
+  function encajarTexto(cont, caja, minimo) {
     quitarRelleno(caja);
-    encajarTextoBase(cont, caja);
+    encajarTextoBase(cont, caja, minimo);
     rellenar(caja);
   }
-  function encajarTextoBase(cont, caja) {
-    var fs;
+  function encajarTextoBase(cont, caja, minimo) {
+    var fs, min = minimo || 12.5;
     function probar(min) { for (fs = topeLetra(22); fs >= min; fs -= 0.5) { caja.style.setProperty('--fs', fs + 'px'); if (cabe(caja, 4)) return true; } return false; }
     cont.classList.remove('sin-arte'); caja.classList.remove('sin-icono');
     if (caja.querySelector('.ctx-icono') && probar(16)) return;
     caja.classList.add('sin-icono');
-    if (!probar(12.5)) { cont.classList.add('sin-arte'); probar(12.5); }
+    if (!probar(min)) { cont.classList.add('sin-arte'); probar(min); }
   }
 
   /* ---------- Avance, visto y celebración ---------- */
@@ -1617,8 +1621,11 @@
         var partido = [].some.call(c.children, function (x) { return x.classList.contains('lectura-paginas'); });
         if (partido && !entrada) return;
         if (partido) { quitarPartes(c); c.style.removeProperty('--fs'); }
-        encajarTexto(pg, c);
-        if (c.scrollHeight > c.clientHeight + 1) { quitarRelleno(c); pg.classList.add('sin-arte'); partirBloques(c); }
+        /* En el marco ancho (SRPA, 1113 × 448) la letra no baja de 14 px: lo que no cabe se lee por partes. El desborde se
+           confirma con la suma de los bloques: la ilustración de relleno entra con «aparece» (translateY de 8 px) y ese
+           movimiento inflaba scrollHeight, de modo que la página perdía su imagen y quedaba un hueco (SRPA U2-L3-E23). */
+        encajarTexto(pg, c, raiz.clientWidth >= 900 ? 14 : 0);
+        if (c.scrollHeight > c.clientHeight + 1 && !cabe(c, 0)) { quitarRelleno(c); pg.classList.add('sin-arte'); partirBloques(c); }
       });
     }
     el.addEventListener('lectura-completa', function () { if (datos.completar) candado(sig, false); });
