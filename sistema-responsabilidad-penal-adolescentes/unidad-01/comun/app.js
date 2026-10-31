@@ -138,7 +138,9 @@
     var lineas = String(s).split('\n'), out = [], k = 0;
     while (k < lineas.length) {
       var j = k;
-      while (j < lineas.length && /^• /.test(lineas[j]) && lineas[j].length <= 72) j++;
+      // Una palabra de 20 caracteres o más («indagación/investigación.») no cabe en media columna y se montaba sobre la
+      // vecina (Estándares U5 al regenerar; revisión de choques, 30/10/2026): esas viñetas siguen en una columna.
+      while (j < lineas.length && /^• /.test(lineas[j]) && lineas[j].length <= 72 && !/\S{20,}/.test(lineas[j])) j++;
       if (j - k >= 4) { out.push('<span class="vinetas-breves">' + lineas.slice(k, j).map(linea).join('') + '</span>'); k = j; }
       else { out.push(linea(lineas[k])); k++; }
     }
@@ -172,6 +174,11 @@
      Con datos.sinHuecos, la letra de las cajas de lectura de alto fijo crece hasta 25 px (antes 22) y, si con ella queda bajo el
      texto un hueco de 110 px o más, la caja recibe allí la ilustración de relleno de la escena (escena.relleno: aprobada,
      del tema del texto y distinta de las que la escena ya muestra). */
+  /* Marco ancho (SRPA, iframe de 1113 × 448): solo el curso que lo declara en datos.marco. Las reglas de base.css para ese
+     marco van con .marco-ancho dentro de su @container: un curso de 767 × 510 abierto en una pestaña ancha (la que abre
+     «Pantalla completa» sin permiso) no cambia de composición (revisión de choques, 30/10/2026). */
+  function marcoAncho() { return !!(datos.marco && datos.marco[0] >= 900); }
+  function anchoReal() { return marcoAncho() && raiz.clientWidth >= 900; }
   function topeLetra(normal) { return datos.sinHuecos ? Math.max(normal, 25) : normal; }
   /* Holgura del encaje: con datos.sinHuecos se deja 4 px libres, porque otro navegador dibuja la misma fuente 1–3 px más alta y
      el panel abriría una barra de desplazamiento. */
@@ -1624,13 +1631,19 @@
         /* En el marco ancho (SRPA, 1113 × 448) la letra no baja de 14 px: lo que no cabe se lee por partes. El desborde se
            confirma con la suma de los bloques: la ilustración de relleno entra con «aparece» (translateY de 8 px) y ese
            movimiento inflaba scrollHeight, de modo que la página perdía su imagen y quedaba un hueco (SRPA U2-L3-E23). */
-        encajarTexto(pg, c, raiz.clientWidth >= 900 ? 14 : 0);
+        encajarTexto(pg, c, anchoReal() ? 14 : 0);
         if (c.scrollHeight > c.clientHeight + 1 && !cabe(c, 0)) { quitarRelleno(c); pg.classList.add('sin-arte'); partirBloques(c); }
         /* Una sola pregunta llena la hoja del marco ancho (la tarjeta se estira): su letra se mide contra el alto de la propia
            tarjeta, de 25 px hacia abajo, para que nunca quede cortada (SRPA U1-L3-E31). */
-        var sola = c.children.length === 1 && c.querySelector('.caso-tarea');
-        if (sola && raiz.clientWidth >= 900) {
-          for (var fs = 25; fs >= 12.5; fs -= 0.5) { c.style.setProperty('--fs', fs + 'px'); if (sola.scrollHeight <= sola.clientHeight + 1) break; }
+        var tareas = c.querySelectorAll('.caso-tarea');
+        var sola = tareas.length === 1 && [].every.call(c.children, function (x) { return x === tareas[0] || x.classList.contains('relleno-arte'); }) && tareas[0];
+        if (sola && anchoReal()) {
+          quitarRelleno(c);   // la tarjeta ocupa todo el alto; la ilustración de relleno la dejaba pequeña (U1-L3-E19)
+          // La tarjeta crece con su texto (flex con min-height automático): se mide también la caja que la contiene.
+          for (var fs = 25; fs >= 12.5; fs -= 0.5) {
+            c.style.setProperty('--fs', fs + 'px');
+            if (sola.scrollHeight <= sola.clientHeight + 1 && c.scrollHeight <= c.clientHeight + 1) break;
+          }
         }
       });
     }
@@ -1748,7 +1761,8 @@
     }).join('') + '</ul>';
     if (escena.tail.length) cuerpo += '<p class="caja-clave' + (conAvance ? ' tras-completar" hidden' : '"') + '><span class="clave-rotulo"><i class="fas fa-star" aria-hidden="true"></i> ' +
       (conAvance ? 'Idea clave desbloqueada' : 'Idea clave') + '</span>' + rico(segs(escena.tail)) + '</p>';
-    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '') + (datos.sinHuecos ? ' sin-huecos' : '');
+    raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '') + (datos.sinHuecos ? ' sin-huecos' : '') +
+      (marcoAncho() ? ' marco-ancho' : '');
     /* Ilustración de la escena en un lugar que varía (Estándares interamericanos; Esteban, 28/10/2026: «a la izquierda, a la
        derecha, en el medio o atrás… de forma embebida para que no sea invasivo»). «arte» = {img, pos}: «izq» o «der», una columna
        propia junto a la mediación; «fondo», la ilustración tenue en la esquina inferior, detrás y sin recibir clics; «centro», en
@@ -1783,6 +1797,12 @@
     /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
        fuente de reserva podía quedar cortado. */
     if (document.fonts) document.fonts.ready.then(function () { window.dispatchEvent(new Event('resize')); });
+    /* En una carga en frío (el iframe de Genially) una fuente puede terminar después de fonts.ready, y el visor da al iframe su
+       tamaño final un momento después de cargarlo: las tarjetas se encajaban con medidas provisionales y quedaban sin dibujo ni
+       extracto (SRPA U2-L3-E10 en Genially, 30/10/2026). Se vuelve a encajar al terminar cada carga de fuentes y a los 0,8 y
+       2 s; las funciones de encaje parten siempre de cero, así que repetirlas no acumula cambios. */
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { window.dispatchEvent(new Event('resize')); });
+    [800, 2000].forEach(function (ms) { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, ms); });
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;

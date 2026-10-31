@@ -877,7 +877,7 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
 .relleno-arte{position:relative}.relleno-arte img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
 /* Viñetas breves en dos columnas (rico() de app.js); en pantalla angosta, una. */
 .vinetas-breves{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px}
-.vinetas-breves>.parr{display:block}
+.vinetas-breves>.parr{display:block;min-width:0;overflow-wrap:break-word}
 @container ova (max-width:520px){.vinetas-breves{grid-template-columns:1fr}}
 /* En una caja que alinea sus hijos al inicio (el panel de las fichas y de la tabla: align-items:flex-start), la figura, cuya
    imagen va en absoluto, quedaba con ancho 0 y el hueco seguía (U3-L2-E60 de Audiencias, pulido del 29/10/2026). */
@@ -987,31 +987,31 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
    La QA de huecos mostró espacios que a 767 px no existían: la columna libre a la izquierda de los puntos, el blanco a la
    derecha del icono de la lámina, la bitácora de una sola pregunta y el mapa radial de nodos chicos. Solo aplica a marcos
    anchos: los cursos de 767 × 510 no cambian (en pantalla completa conservan su marco). */
+/* Solo el curso con datos.marco ancho (SRPA): app.js pone .marco-ancho en .ova (revisión de choques, 30/10/2026). */
 @container ova (min-width:900px){
-  .puntos-escena{grid-template-columns:minmax(0,1fr) minmax(300px,36%)}
-  .puntos-leyenda{gap:12px}
-  .punto-leyenda{padding:12px 16px;font-size:15.5px}
-  .ctx-texto:has(> .ctx-icono){display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:20px;align-content:center;align-items:start}
-  .ctx-texto > .ctx-icono{grid-column:1;grid-row:1 / span 4;margin-bottom:0}
-  .ctx-texto > :not(.ctx-icono){grid-column:2}
-  .caso-tareas:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto,
-  .caso-situacion:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto{line-height:1.45}
-  .caso-tareas:has(> .caso-tarea:only-of-type){display:flex;flex-direction:column;justify-content:center;flex:1}
-  .mapa .nodo{width:178px;font-size:14px;padding:10px 8px 12px}.mapa .nodo.nucleo{width:220px;font-size:15px}
-  .mapa .nodo .obj-svg{width:64px!important;height:auto}
+  .marco-ancho .puntos-escena{grid-template-columns:minmax(0,1fr) minmax(300px,36%)}
+  .marco-ancho .puntos-leyenda{gap:12px}
+  .marco-ancho .punto-leyenda{padding:12px 16px;font-size:15.5px}
+  .marco-ancho .ctx-texto:has(> .ctx-icono){display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:20px;align-content:center;align-items:start}
+  .marco-ancho .ctx-texto > .ctx-icono{grid-column:1;grid-row:1 / span 4;margin-bottom:0}
+  .marco-ancho .ctx-texto > :not(.ctx-icono){grid-column:2}
+  .marco-ancho .caso-tareas:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto,.marco-ancho .caso-situacion:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto{line-height:1.45}
+  .marco-ancho .caso-tareas:has(> .caso-tarea:only-of-type){display:flex;flex-direction:column;justify-content:center;flex:1}
+  .marco-ancho .mapa .nodo{width:178px;font-size:14px;padding:10px 8px 12px}.marco-ancho .mapa .nodo.nucleo{width:220px;font-size:15px}
+  .marco-ancho .mapa .nodo .obj-svg{width:64px!important;height:auto}
   /* QA final (30/10/2026): la tarjeta de una sola pregunta llena el alto de la bitácora; el texto breve de una ficha se
      centra en su panel; la leyenda de pocos puntos se reparte en su columna; la ficha de introducción va a todo el ancho. */
-  .caso-tareas:has(> .caso-tarea:only-of-type) .caso-tarea{flex:1;align-content:center}
-  .puntos-leyenda{align-self:stretch;justify-content:space-evenly}
-  .escenario>.intro{align-self:stretch}
+  .marco-ancho .caso-tareas:has(> .caso-tarea:only-of-type) .caso-tarea{flex:1;align-content:center}
+  .marco-ancho .puntos-leyenda{align-self:stretch;justify-content:space-evenly}
+  .marco-ancho .escenario>.intro{align-self:stretch}
   /* El texto de la ficha se centra en los dos ejes: uno largo llena el ancho como antes y uno breve («Las leyes estatutarias
      y, / Las leyes orgánicas.») queda en un bloque al centro, con su título alineado a la izquierda (U1-L4-E07). */
-  .panel-fichas.con-figura .panel-texto:not(.con-relleno){display:grid;grid-template-columns:minmax(0,max-content);justify-content:center;align-content:safe center}
+  .marco-ancho .panel-fichas.con-figura .panel-texto:not(.con-relleno){display:grid;grid-template-columns:minmax(0,max-content);justify-content:center;align-content:safe center}
   /* Bitácora sin imagen: el encabezado va en una columna a la izquierda, como el margen de un cuaderno, y las preguntas
      ocupan el resto del alto; no queda la franja vacía junto al título (U2-L3-E23, U5-L2-E06). */
-  .caso-pagina.sin-arte>.caso-hoja{display:grid;grid-template-columns:minmax(200px,23%) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:26px;row-gap:8px}
-  .caso-pagina.sin-arte>.caso-hoja>.caso-eyebrow{grid-column:1;grid-row:1;margin-top:6px}
-  .caso-pagina.sin-arte>.caso-hoja>.caso-nombre{grid-column:1;grid-row:2;font-size:23px;line-height:1.25}
-  .caso-pagina.sin-arte>.caso-hoja>.caso-encaja{grid-column:2;grid-row:1 / -1}
-  .caso-pagina.sin-arte>.caso-hoja::after{content:"\f044";grid-column:1;grid-row:3;align-self:center;justify-self:center;font:900 84px/1 "Font Awesome 6 Free";color:var(--niebla)}
+  .marco-ancho .caso-pagina.sin-arte>.caso-hoja{display:grid;grid-template-columns:minmax(200px,23%) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:26px;row-gap:8px}
+  .marco-ancho .caso-pagina.sin-arte>.caso-hoja>.caso-eyebrow{grid-column:1;grid-row:1;margin-top:6px}
+  .marco-ancho .caso-pagina.sin-arte>.caso-hoja>.caso-nombre{grid-column:1;grid-row:2;font-size:23px;line-height:1.25}
+  .marco-ancho .caso-pagina.sin-arte>.caso-hoja>.caso-encaja{grid-column:2;grid-row:1 / -1}
+  .marco-ancho .caso-pagina.sin-arte>.caso-hoja::after{content:"\f044";grid-column:1;grid-row:3;align-self:center;justify-self:center;font:900 84px/1 "Font Awesome 6 Free";color:var(--niebla)}
 }
