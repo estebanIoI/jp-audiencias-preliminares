@@ -27,7 +27,7 @@
   var guias = {
     mapa: 'Toca cada rama del mapa para descubrirla.',
     lamina: 'Toca los puntos sobre la ilustración.',
-    giro: 'Toca cada tarjeta para girarla y leerla.',
+    giro: 'Pasa el cursor o toca cada tarjeta para girarla y leerla.',
     fichas: 'Elige cada ficha para leer su contenido.',
     ruta: 'Recorre la ruta paso a paso.',
     linea: 'Avanza por la historia del caso.',
@@ -42,14 +42,19 @@
     esquema: 'Recorre el mapa conceptual.',
     compara: 'Toca cada columna para compararla.',
     eje: 'Toca cada categoría del eje y compara las dos columnas.',
+    red: 'Abre cada institución de la red: al leerla se revela su papel en el sistema.',
+    conexiones: 'Lee cada fragmento: cada uno revela una conexión del mapa.',
+    condiciones: 'Lee los fragmentos y marca si cada requisito se cumple: la consecuencia cambia.',
     actividad: 'Elige una respuesta: si no es la correcta, lee la retroalimentación e inténtalo de nuevo.'
   };
   /* Juan (26–27/10/2026): mayúscula inicial en rótulos, títulos y en todo bloque de texto (párrafo, viñeta, celda, extracto);
      artículos, leyes, sentencias y la Corte se ven y titilan. Solo cambia la letra con que arranca el bloque: si empieza
-     con un número no se toca, y la marca de una enumeración («(ii)», «a)», «b.», «1.») se conserva. */
+     con un número no se toca, y la marca de una enumeración («(ii)», «a)», «b.», «1.») se conserva. Una dirección web
+     («https://…», «www.…») tampoco: «Https://» no es la dirección de la ficha (SRPA, U2-L1-E06). */
   function may(s) {
     s = String(s);
     var p = /^[\s•«"“'(¿¡*\-–—]*(?:(?:[ivx]{1,5}|[a-j]|\d{1,2})[.)]\s+)?/.exec(s)[0];
+    if (/^(?:https?:\/\/|www\.)/i.test(s.slice(p.length))) return s;
     return p + s.slice(p.length).replace(/^\p{Ll}/u, function (c) { return c.toUpperCase(); });
   }
   var REF = /(?:\b[Aa]rt(?:ículos?|\.)\s*\d+[A-Za-z]?(?:\s(?:del|de la)\s(?:CPP|CN|Constitución Política|Ley\s\d+(?:\sde\s\d{4})?))?|\bLey\s\d+(?:\s?(?:de\s|\/)\d{4})?|\b(?:Sentencias?\s)?(?:C|T|SU)-\d+(?:\/\d+|\sde\s\d{4})?|\b(?:STP|STC|AP|SP|STS)\s?\d+[-\/]\d{4}|Corte Constitucional|Corte Suprema de Justicia|Constitución Política|Resolución\s[\d‐-]+\sde\s\d{4}|Directiva\s\d+(?:\sde\s\d{4})?)/g;
@@ -334,6 +339,9 @@
     if (vistos[id]) return;
     vistos[id] = true;
     raiz.querySelectorAll('[data-id="' + id + '"]').forEach(function (b) { b.classList.add('visto'); });
+    /* Las familias que cambian al leer (red, conexiones) escuchan este aviso en su bloque. */
+    var origen = raiz.querySelector('[data-id="' + id + '"]');
+    if (origen) origen.dispatchEvent(new CustomEvent('ova-visto', { bubbles: true, detail: id }));
     if (datos.sinHuecos) midiendo(function () { encajarTarjetas(); ajustarExtractos(); });
     var n = Object.keys(vistos).length, barra = raiz.querySelector('.barra i');
     if (!barra) return;
@@ -509,19 +517,198 @@
   }
   /* «Siguiente» con candado: sigue activo para explicar qué falta, pero no avanza. */
   function candado(boton, si) { boton.classList.toggle('bloqueado', !!si); boton.setAttribute('aria-disabled', String(!!si)); }
-  function leer(titulo, texto, obj, desde) {
+  var alCerrarLector = null;
+  function leer(titulo, texto, obj, desde, hoja) {
     var l = raiz.querySelector('.lector');
+    if (alCerrarLector && !hoja) { var f0 = alCerrarLector; alCerrarLector = null; f0(); }
     retornoFoco = desde || null;
-    l.innerHTML = '<div class="lector-caja" role="dialog" aria-modal="true" aria-label="' + esc(may(titulo)) + '" tabindex="-1">' +
-      '<button type="button" class="cerrar" aria-label="Cerrar lectura">Cerrar ×</button>' +
-      (obj ? '<span class="lector-arte">' + svgObjeto(obj, 78) + '</span>' : '') +
-      '<p class="lectura-eyebrow">' + esc(may(titulo)) + '</p><p class="lectura-texto">' + rico(texto) + '</p></div>';
+    /* «hoja»: {izq}, la ventana como hoja de cuaderno a la derecha de la tarjeta que se abre (B.giro). */
+    l.classList.toggle('en-hoja', !!hoja);
+    if (hoja) l.style.setProperty('--hoja-izq', hoja.izq + 'px'); else l.style.removeProperty('--hoja-izq');
+    var cerrar = '<button type="button" class="cerrar" aria-label="Cerrar lectura">Cerrar ×</button>', arte = obj ? '<span class="lector-arte">' + svgObjeto(obj, 78) + '</span>' : '';
+    l.innerHTML = '<div class="lector-caja" role="dialog" aria-modal="true" aria-label="' + esc(may(titulo)) + '" tabindex="-1">' + (hoja
+      /* La hoja de cuaderno del giro (Esteban, 30/10/2026: «en el de seguir leyendo, en la vista escritorio, que sea scroll»): el
+         texto completo se desplaza dentro de la hoja, con su avance; queda leído al llegar al final. */
+      ? '<div class="hoja-cab"><p class="lectura-eyebrow">' + esc(may(titulo)) + '</p>' + arte + cerrar + '</div>' +
+        '<div class="lectura-texto hoja-texto desplazable" tabindex="0">' + rico(texto) + '</div><p class="hoja-pie" aria-live="polite"></p>'
+      : cerrar + arte + '<p class="lectura-eyebrow">' + esc(may(titulo)) + '</p><p class="lectura-texto">' + rico(texto) + '</p>') + '</div>';
     l.hidden = false;
-    if (!dosificar(l.firstChild, function () { encajarLector(l.firstChild); })) encajarLector(l.firstChild);
-    reanimar(l.firstChild);
+    /* La ventana también se escribe letra por letra y, al terminar cada parte, «Seguir leyendo» dice «¡Sigue aquí!» (Esteban,
+       31/10/2026: prioridad 1 del diagnóstico de detalles, el lector del esquema, los puntos, la lámina, el mapa mental y el mapa).
+       Las letras se envuelven antes de medir y repartir la lectura, para que nada cambie de lugar al escribirse. */
+    var lt = !hoja && !quieto ? l.firstChild.querySelector('.lectura-texto') : null, letras = lt ? envolverLetras(lt) : null, partes = false;
+    if (hoja) leerDesplazando(l.firstChild);
+    else if (!(partes = !!dosificar(l.firstChild, function () { encajarLector(l.firstChild); }))) encajarLector(l.firstChild);
+    if (!animarApertura(l, desde)) reanimar(l.firstChild);
+    if (letras) escribirVentana(lt, letras, partes);
+    /* Lo que se abrió y aún no está visto (le falta una parte) late hasta completarse: el estudiante sabe dónde le falta leer. */
+    if (desde && desde.classList) desde.classList.add('abierta');
     l.querySelector('.cerrar').onclick = cerrarLector;
     l.firstChild.focus({ preventScroll: true });
   }
+  /* La ventana nace del elemento que la abre y se expande al centro con un rebote breve; su contenido entra escalonado (Esteban,
+     30/10/2026: «que aparezca el modal… de forma animada, bien chévere»). Web Animations API, sin bibliotecas; nada con «reducir
+     movimiento». Dura menos de 0,4 s, para que la lectura esté quieta al medirla. */
+  var quieto = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function animarApertura(l, desde) {
+    var caja = l.firstChild;
+    if (quieto || !caja || !caja.animate || !desde || !desde.getBoundingClientRect) return false;
+    var o = desde.getBoundingClientRect(), c = caja.getBoundingClientRect();
+    if (!o.width || !c.width) return false;
+    var dx = o.left + o.width / 2 - (c.left + c.width / 2), dy = o.top + o.height / 2 - (c.top + c.height / 2);
+    var s = Math.max(0.15, Math.min(1, o.width / c.width, o.height / c.height));
+    l.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' });
+    if (l.classList.contains('en-hoja')) {
+      caja.animate([{ transform: 'translateX(-70px) rotate(-4deg) scale(.96)', opacity: 0 }, { transform: 'translateX(4px) rotate(.2deg)', opacity: 1, offset: 0.75 },
+        { transform: 'rotate(-.4deg)', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
+    } else caja.animate([{ transform: 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')', opacity: 0.35 },
+      { transform: 'translate(0,0) scale(1.015)', opacity: 1, offset: 0.78 }, { transform: 'none', opacity: 1 }],
+      { duration: 340, easing: 'cubic-bezier(.2,.9,.3,1)' });
+    [].forEach.call(caja.querySelectorAll('.lector-arte,.lectura-eyebrow,.lectura-texto,.lectura-paginas,.cerrar,.hoja-pie'), function (x, i) {
+      x.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 220, delay: Math.min(130, 70 + i * 30), easing: 'ease-out', fill: 'backwards' });
+    });
+    return true;
+  }
+  /* Lectura con desplazamiento dentro de la hoja: un indicador dice cuánto falta («Desliza para seguir leyendo · 40 %») y la línea del
+     margen se llena con lo leído. Con datos.completar, el visto llega al llegar al final del texto (leer el 100 %). */
+  function leerDesplazando(caja) {
+    var t = caja.querySelector('.hoja-texto'), pie = caja.querySelector('.hoja-pie');
+    var L = { partes: 1, leidas: {}, completa: false, turno: turno, alCompletar: [] };
+    if (datos.completar) ultimaLectura = L;
+    var escribiendo = true;
+    function revisar() {
+      if (!t.isConnected) return;
+      if (escribiendo) {
+        pie.innerHTML = '<i class="fas fa-pen-nib" aria-hidden="true"></i> Escribiendo… toca la hoja para verla completa';
+        return;
+      }
+      var sobra = t.scrollHeight - t.clientHeight, pct = sobra <= 2 ? 100 : Math.min(100, Math.round(100 * (t.scrollTop + t.clientHeight) / t.scrollHeight));
+      caja.style.setProperty('--leido', pct + '%');
+      if (sobra - t.scrollTop <= 4) {
+        if (!L.completa) { L.completa = true; L.alCompletar.splice(0).forEach(function (f) { f(); }); }
+        caja.classList.add('hoja-leida');
+        pie.innerHTML = visto + ' Leído completo';
+      } else pie.innerHTML = '<i class="fas fa-angles-down" aria-hidden="true"></i> Desliza para seguir leyendo · ' + pct + ' %';
+    }
+    t.addEventListener('scroll', revisar, { passive: true });
+    revisar();
+    escribir(t, function () { escribiendo = false; revisar(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(revisar);
+  }
+  /* El texto de la hoja se va escribiendo, palabra por palabra, con un cursor que parpadea, y la hoja baja sola siguiéndolo
+     (Esteban, 30/10/2026: «que las letras no aparezcan de una, que se vaya escribiendo, así el usuario va leyendo»). Tocar la hoja,
+     girar la rueda o usar el teclado lo muestra completo de una vez. El texto está entero en el documento desde el principio (los
+     lectores de pantalla lo leen completo); con «reducir movimiento» aparece de una vez. */
+  function escribir(t, fin) {
+    if (quieto) { fin(); return; }
+    escribirLetras(t, envolverLetras(t), fin);
+  }
+  /* Cada carácter del texto en su propia letra («l»), sin cambiar el texto: se hace antes de medir y repartir la lectura. */
+  function envolverLetras(t) {
+    /* Escritura real (Esteban, 31/10/2026: «ponle como escritura real, la animación de aparición está muy lag»): letra por
+       letra, con el texto ya en su lugar (cada letra existe desde el principio y solo se hace visible: nada se reacomoda) y un
+       cursor que se desliza detrás de la última letra. Va con requestAnimationFrame, sin temporizadores a saltos. */
+    var letras = [], nodos = [], n, w = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
+    while ((n = w.nextNode())) if (n.nodeValue.trim()) nodos.push(n);
+    nodos.forEach(function (nodo) {
+      /* Un resaltado (referencia jurídica, caja) no se ve vacío antes de tiempo: aparece con su primera letra. */
+      var pa = nodo.parentNode;
+      if (pa !== t && pa.nodeType === 1) {
+        var cs = getComputedStyle(pa);
+        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.borderBottomStyle !== 'none' || cs.boxShadow !== 'none') pa.classList.add('caja-letras');
+      }
+      var frag = document.createDocumentFragment();
+      Array.from(nodo.nodeValue).forEach(function (ch) {
+        var s = document.createElement('span');
+        s.className = 'l'; s.textContent = ch; frag.appendChild(s); letras.push(s);
+      });
+      nodo.parentNode.replaceChild(frag, nodo);
+    });
+    return letras;
+  }
+  /* Las letras se hacen visibles al ritmo de lectura; si la siguiente está en una parte oculta (lectura por partes), la
+     escritura espera hasta que esa parte se muestre con «Seguir leyendo». */
+  function escribirLetras(t, letras, fin) {
+    if (!letras || !letras.length) { fin(); return; }
+    /* Al ritmo de quien lee con fluidez (Esteban, 31/10/2026): en español, unas 220 palabras o 1 000 caracteres por minuto
+       (IReST): 58 ms por carácter, con una variación mínima, una pausa breve tras la coma y otra mayor al cerrar la oración. */
+    var cuando = [], acum = 250;
+    letras.forEach(function (s, k) {
+      cuando.push(acum);
+      var ch = s.textContent, sig = letras[k + 1] ? letras[k + 1].textContent : ' ';
+      acum += 58 * (0.85 + 0.3 * ((k * 7919) % 13) / 12);
+      if (/\s/.test(sig)) { if (/[,;:]/.test(ch)) acum += 180; else if (/[.?!…]/.test(ch)) acum += 320; }
+    });
+    var cursor = document.createElement('span');
+    cursor.className = 'cursor-escritura'; cursor.setAttribute('aria-hidden', 'true');
+    t.appendChild(cursor);
+    t.classList.add('escribiendo');
+    var i = 0, tiempo = 0, ultimo = null, cuadro = null, listo = false, esperando = false;
+    /* Terminada una parte (Esteban, 31/10/2026: «que cuando termine le indique al usuario que tiene que darle seguir»): «Seguir
+       leyendo» late y un globo dice «¡Sigue aquí!» hasta que lo toca. */
+    function seguirAqui(si) {
+      var cont = t.parentNode, sig = null;
+      for (var k = 0; k < 4 && cont && !sig; k++, cont = cont.parentNode) sig = cont.querySelector && cont.querySelector('.pag-siguiente');
+      if (!sig) return;
+      sig.classList.toggle('sigue-aqui', si);
+    }
+    function terminar() {
+      if (listo) return;
+      listo = true; cancelAnimationFrame(cuadro);
+      if (esperando) seguirAqui(false);
+      t.classList.remove('escribiendo'); cursor.remove();
+      ['click', 'wheel', 'touchstart', 'keydown'].forEach(function (e) { t.removeEventListener(e, terminar); });
+      fin();
+    }
+    ['click', 'wheel', 'touchstart', 'keydown'].forEach(function (e) { t.addEventListener(e, terminar, { passive: true }); });
+    function cuadroDe(ahora) {
+      if (!t.isConnected || listo) return;
+      var dt = ultimo === null ? 0 : Math.min(100, ahora - ultimo), antes = i;
+      ultimo = ahora;
+      if (i < letras.length && !letras[i].offsetParent) {   // parte oculta: espera y le indica al estudiante que siga
+        if (!esperando) { esperando = true; seguirAqui(true); }
+        cuadro = requestAnimationFrame(cuadroDe); return;
+      }
+      if (esperando) { esperando = false; seguirAqui(false); }
+      tiempo += dt;
+      while (i < letras.length && cuando[i] <= tiempo && letras[i].offsetParent) {
+        var pa = letras[i].parentNode;
+        if (pa.classList && pa.classList.contains('caja-letras')) pa.classList.add('con-letra');
+        letras[i++].classList.add('vista');
+      }
+      if (i > antes) {
+        var ult = letras[i - 1], r = ult.getBoundingClientRect(), c = t.getBoundingClientRect();
+        cursor.style.transform = 'translate(' + (r.right - c.left + t.scrollLeft).toFixed(1) + 'px,' + (r.top - c.top + t.scrollTop).toFixed(1) + 'px)';
+        cursor.style.height = r.height + 'px';
+        if (r.bottom > c.bottom - 8) t.scrollTop += r.bottom - c.bottom + 30;   // la hoja baja con lo que se escribe
+      }
+      if (i >= letras.length) { setTimeout(terminar, 450); return; }
+      cuadro = requestAnimationFrame(cuadroDe);
+    }
+    cuadro = requestAnimationFrame(cuadroDe);
+  }
+  /* Escribe la lectura de una ventana (lector, comparación). Con datos.completar y sin partes, queda leída al terminar de
+     escribirse, como la hoja del giro; con partes, al pasar la última. Tocar el texto lo muestra completo. */
+  function escribirVentana(t, letras, conPartes) {
+    var L = null;
+    if (datos.completar && !conPartes) { L = { partes: 1, leidas: {}, completa: false, turno: turno, alCompletar: [] }; ultimaLectura = L; }
+    escribirLetras(t, letras, function () { if (L && !L.completa) { L.completa = true; L.alCompletar.splice(0).forEach(function (f) { f(); }); } });
+  }
+  /* Al cerrar una lectura sin terminarla, un aviso lo dice por escrito (Esteban, 31/10/2026: «que le diga que le falta leer… ya que
+     ahora solo titilan»). No tapa nada que se pueda tocar y se va solo. */
+  function avisarFalta(titulo) {
+    var v = raiz.querySelector('.aviso-falta');
+    if (v) v.remove();
+    v = document.createElement('p');
+    v.className = 'aviso-falta'; v.setAttribute('role', 'status');
+    v.innerHTML = '<i class="fas fa-book-open" aria-hidden="true"></i><span>Te falta leer' + (titulo ? ' «' + esc(titulo) + '»' : '') + '. Ábrela de nuevo para terminar.</span>';
+    raiz.appendChild(v);
+    setTimeout(function () { v.classList.add('sale'); setTimeout(function () { v.remove(); }, 400); }, 3400);
+  }
+  /* Estado escrito de lo que abre una lectura: «Por leer», «Te falta leer» (abierta sin terminar) o «Leída» (base.css). */
+  var estado = '<span class="estado-lectura"><span class="est-por">Por leer</span><span class="est-falta"><i class="fas fa-book-open" aria-hidden="true"></i> Te falta leer</span>' +
+    '<span class="est-leida"><i class="fas fa-circle-check" aria-hidden="true"></i> Leída</span></span>';
   /* Si el texto no cabe en el lector, la letra baja de a medio punto (hasta 12 px): nunca desplazamiento. */
   function encajarLector(caja) {
     var t = caja.querySelector('.lectura-texto'), fs = parseFloat(getComputedStyle(t).fontSize);
@@ -530,7 +717,10 @@
   function cerrarLector() {
     var l = raiz.querySelector('.lector');
     if (!l || l.hidden) return false;
+    var d = retornoFoco, titulo = l.firstChild && l.firstChild.getAttribute && l.firstChild.getAttribute('aria-label'), hoja = l.classList.contains('en-hoja');
     l.hidden = true; l.innerHTML = '';
+    if (alCerrarLector) { var f = alCerrarLector; alCerrarLector = null; f(); }
+    if (!hoja && datos.completar && d && d.dataset && d.dataset.id && !vistos[d.dataset.id]) avisarFalta(titulo);
     if (retornoFoco && retornoFoco.isConnected) retornoFoco.focus({ preventScroll: true });
     return true;
   }
@@ -566,7 +756,7 @@
   function boton(clase, item, k, i, estilo) {
     return '<button type="button" class="nodo ' + clase + refc(item.label) + '" data-id="' + k + '-' + i + '" data-b="' + k + '" data-i="' + i + '" style="' + estilo + '">' +
       '<span class="nodo-arte">' + svgObjeto(item.obj, clase === 'nucleo' ? 70 : 48) + '</span><span class="nodo-rotulo">' + rot(item.label) + '</span>' +
-      '<span class="nodo-marca">' + mano + visto + '</span></button>';
+      '<span class="nodo-marca">' + mano + visto + '</span>' + estado + '</button>';
   }
   B.mapa.activar = function (b, k, el) {
     var orden = [b.items.filter(function (x) { return x.centro; })[0]].concat(b.items.filter(function (x) { return !x.centro; }));
@@ -591,7 +781,7 @@
       b.items.map(function (it, i) { return O.dibujar(it.obj, xs[i], LBASE, s, 'entra e' + i); }).join('') + '</svg>';
     return '<div class="lamina">' + svg + b.items.map(function (it, i) {
       return '<button type="button" class="punto' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" data-x="' + xs[i] + '" data-y="' + Math.round(LBASE - 120 * s) + '">' +
-        '<span class="punto-n">' + (i + 1) + '</span><span class="punto-rotulo">' + rot(it.label) + '</span>' + mano + '<span class="punto-visto">' + visto + '</span></button>';
+        '<span class="punto-n">' + (i + 1) + '</span><span class="punto-rotulo">' + rot(it.label) + '</span>' + mano + '<span class="punto-visto">' + visto + '</span>' + estado + '</button>';
     }).join('') + '</div>';
   };
   function posicionarPuntos() {
@@ -705,45 +895,236 @@
         return '<button type="button" class="giro' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (i * 0.08) + 's"><span class="giro-int">' +
           '<span class="cara frente"><span class="giro-n">' + (i + 1) + '</span><span class="giro-arte">' + svgObjeto(it.obj, b.compacto ? 44 : 96) + '</span>' +
           '<span class="giro-rotulo">' + rot(it.label) + '</span>' + (b.compacto ? '' : '<span class="giro-extracto">' + esc(may(extracto(segs(it.segs), 150))) + '</span>') +
-          '<span class="giro-toca">' + mano + ' Toca para girar</span></span>' +
-          '<span class="cara dorso"><span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-leido">' + visto + ' Leído · toca para releer</span></span>' +
+          '<span class="giro-toca">' + mano + ' Toca para girar</span>' +
+          '<span class="giro-releer">' + visto + ' Leída · toca para releer</span>' +
+          '<span class="giro-pendiente"><i class="fas fa-book-open" aria-hidden="true"></i> Te falta leer · toca para seguir</span>' +
+          '<span class="giro-sello" aria-hidden="true">' + visto + ' Leída</span>' +
+          '<span class="giro-carga" aria-hidden="true"></span><span class="destello" aria-hidden="true"></span></span>' +
+          '<span class="cara dorso"><span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-leido">' + visto + ' Leído · toca para releer</span>' +
+          '<span class="giro-falta"><i class="fas fa-book-open" aria-hidden="true"></i> Te falta leer · toca para seguir</span><span class="destello" aria-hidden="true"></span></span>' +
           '</span></button>';
-      }).join('') + '</div>';
+      }).join('') + '</div>' +
+      /* Celular: las mismas tarjetas como lista que se desplaza; cada una lleva su texto completo, que se revela al pasar. */
+      '<ol class="giro-lista desplazable" tabindex="0" aria-label="Tarjetas: desliza para leerlas">' +
+      /* En celular, la ilustración de la escena encabeza la lista (en el iframe ancho va al lado de las tarjetas). */
+      (datos.ilustraciones && ((escena.arte && escena.arte.img) || escena.ilustracion) ? '<li class="giro-lista-arte" aria-hidden="true"><img src="' + srcImagen((escena.arte && escena.arte.img) || escena.ilustracion) + '" alt=""></li>' : '') +
+      b.items.map(function (it, i) {
+        return '<li class="giro-paso' + refc(it.label) + '" data-id="' + k + '-' + i + '"><p class="giro-paso-cab"><span class="giro-n">' + (i + 1) + '</span>' +
+          '<span class="giro-arte">' + svgObjeto(it.obj, 34) + '</span><span class="giro-rotulo">' + rot(it.label) + '</span><span class="giro-paso-visto">' + visto + '</span></p>' +
+          '<div class="giro-paso-texto">' + rico(segs(it.segs)) + '</div><span class="giro-fin" aria-hidden="true"></span></li>';
+      }).join('') + '<li class="giro-mas" aria-hidden="true"><i class="fas fa-chevron-down"></i></li></ol>';
   };
   B.giro.activar = function (b, k, el) {
     el.querySelectorAll('.giro').forEach(function (g) {
       g.addEventListener('click', function () {
-        var it = b.items[Number(g.dataset.i)];
-        g.classList.add('girada');
-        leer(it.label, segs(it.segs), it.obj, g); marcar(g.dataset.id);
+        if (g.classList.contains('volteando')) return;
+        var it = b.items[Number(g.dataset.i)], porCursor = g._porCursor;
+        g._porCursor = false;
+        voltear(g, function () {
+          var h = aLaEsquina(g);
+          leer(it.label, segs(it.segs), it.obj, g, h); marcar(g.dataset.id);
+          /* Al cerrar, la tarjeta da la vuelta de regreso y muestra otra vez su cara (icono, rótulo, extracto) con su estado:
+             leída, en otro color y con su sello; a medias, «Te falta leer» (Esteban, 31/10/2026: «que después de leído quede de
+             otro color pero con la información que tiene cuando no está volteada… y los identificativos de lectura claros»). */
+          if (!h) alCerrarLector = function () { g.classList.remove('girada'); g._calma = performance.now() + 1500; };
+          if (porCursor) vigilarCursor(g);
+        });
       });
     });
+    giroConCursor(el);
+    giroAlDesplazar(el);
+    var gs = el.querySelector('.giros');
+    if (gs) setTimeout(function () { gs.classList.add('ya-entraron'); }, 1300);
   };
+  /* El giro, protagonista (Esteban, 30/10/2026: «al pasar el cursor no se ve la animación de la tarjeta al voltearse… que sea épico,
+     premium»): la tarjeta sale hacia el frente y gira en 3D con perspectiva, creciendo a mitad de la vuelta; la cruza un destello y
+     saltan chispas con los colores del curso. Solo al terminar la vuelta pasa a la esquina y sale la hoja. Una tarjeta ya girada
+     abre su hoja de una vez; con «reducir movimiento», todo directo. */
+  function voltear(g, listo) {
+    var int = g.querySelector('.giro-int');
+    if (g.classList.contains('girada') || quieto || !int || !int.animate) { g.classList.add('girada'); listo(); return; }
+    g.classList.add('volteando', 'girada');
+    var a = int.animate([
+      { transform: 'translateZ(0) rotateY(0deg) scale(1)' },
+      { transform: 'translateZ(50px) rotateY(-16deg) scale(1.06)', offset: 0.14 },
+      { transform: 'translateZ(110px) rotateY(96deg) scale(1.16)', offset: 0.56 },
+      { transform: 'translateZ(30px) rotateY(194deg) scale(1.04)', offset: 0.86 },
+      { transform: 'translateZ(0) rotateY(180deg) scale(1)' }
+    ], { duration: 680, easing: 'cubic-bezier(.45,.05,.25,1)' });
+    chispas(g);
+    var hecho = false;
+    a.onfinish = a.oncancel = function () { if (hecho) return; hecho = true; g.classList.remove('volteando'); listo(); };
+  }
+  /* Chispas desde el centro de `g` o, con `o`, desde el punto {x, y} de la pantalla (n, distancia d y retraso en ms). */
+  function chispas(g, o) {
+    o = o || {};
+    var r = g.getBoundingClientRect(), base = raiz.getBoundingClientRect(), n = o.n || 16;
+    var cx = (o.x != null ? o.x : r.left + r.width / 2) - base.left, cy = (o.y != null ? o.y : r.top + r.height / 2) - base.top;
+    var colores = ['var(--coral)', 'var(--niebla)', 'var(--marino)', 'var(--crema)', 'var(--teal)'];
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement('span'), ang = (i / n) * Math.PI * 2 + (i % 2) * 0.2, d = (o.d || 70) + (i % 4) * (o.d ? o.d * 0.4 : 28);
+      s.className = 'chispa'; s.setAttribute('aria-hidden', 'true');
+      s.style.left = cx + 'px'; s.style.top = cy + 'px';
+      s.style.background = colores[i % colores.length];
+      raiz.appendChild(s);
+      var fin = 'translate(calc(-50% + ' + (Math.cos(ang) * d).toFixed(1) + 'px),calc(-50% + ' + (Math.sin(ang) * d * 0.85).toFixed(1) + 'px))';
+      s.animate([{ transform: 'translate(-50%,-50%) scale(0)', opacity: 1 }, { transform: fin + ' scale(1)', opacity: 1, offset: 0.55 },
+        { transform: fin + ' scale(.3)', opacity: 0 }], { duration: 640, delay: o.retraso != null ? o.retraso : 260, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'both' })
+        .onfinish = (function (x) { return function () { x.remove(); }; })(s);
+    }
+  }
+  /* La tarjeta que se abre gira, pasa a la primera posición (la esquina izquierda) y las demás se apartan; a su lado sale la
+     hoja con su texto, que no tapa el giro (Esteban, 30/10/2026: «que la tarjeta gira y se posicione de primera… hacia la
+     esquina… y que el cajón de información… como un cuadernito, una hoja de esas antiguas»). Al cerrar, todo vuelve a su sitio.
+     Sin espacio para la hoja (una sola tarjeta muy ancha), la ventana va al centro, como antes. */
+  function aLaEsquina(g) {
+    if (alCerrarLector) { var f = alCerrarLector; alCerrarLector = null; f(); }   // la tarjeta anterior vuelve a su sitio
+    var giros = g.closest('.giros'), esc = raiz.querySelector('.escenario');
+    if (!giros || !esc || !g.offsetParent) return null;
+    var G = giros.getBoundingClientRect(), r = g.getBoundingClientRect(), E = esc.getBoundingClientRect();
+    var izq = G.left - E.left + r.width + 18;
+    if (E.width - izq < 420) return null;
+    /* Posición en la rejilla (offsetLeft/Top no cambian con la animación): al reabrir, la tarjeta puede estar aún volviendo. */
+    var primera = giros.querySelector('.giro');
+    g.style.setProperty('--dx', (primera.offsetLeft - g.offsetLeft) + 'px');
+    g.style.setProperty('--dy', (primera.offsetTop - g.offsetTop) + 'px');
+    giros.classList.add('con-hoja'); g.classList.add('al-frente');
+    /* Al cerrar, la tarjeta vuelve a su lugar; si el cursor quedó ahí, no se reabre sola: hay que salir y volver a entrar. */
+    alCerrarLector = function () { giros.classList.remove('con-hoja'); g.classList.remove('al-frente', 'girada'); g._calma = performance.now() + 1500; };
+    return { izq: Math.round(izq) };
+  }
+  /* Con ratón (Esteban, 30/10/2026: «que ese modal salga cuando le pase el cursor por encima… en todas las partes donde tenga
+     esta mediación»): posar el cursor un momento sobre una tarjeta la gira y abre su ventana, como el clic. La ventana abierta así
+     se cierra sola cuando el cursor sale de ella y de su tarjeta, salvo que se use: un clic dentro («Seguir leyendo») la deja fija.
+     Tocar y el teclado, como antes; con datos.completar, el visto sigue llegando al leer la última parte. */
+  function giroConCursor(el) {
+    if (!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches)) return;
+    var espera = null;
+    el.querySelectorAll('.giro').forEach(function (g) {
+      g.addEventListener('pointerenter', function (e) {
+        if (e.pointerType !== 'mouse' || !raiz.querySelector('.lector').hidden || el.querySelector('.volteando')) return;
+        clearTimeout(espera);
+        g.classList.add('por-abrir');   // una barra se llena: la tarjeta está por abrirse
+        espera = setTimeout(function () {
+          g.classList.remove('por-abrir');
+          if (!g.isConnected || !g.offsetParent || !g.matches(':hover') || !raiz.querySelector('.lector').hidden || el.querySelector('.volteando') || performance.now() < (g._calma || 0)) return;
+          turno++;   // un «turno» propio: el visto diferido de esta lectura no se cuelga de la anterior
+          g._porCursor = true;
+          g.click();
+        }, 400);
+      });
+      g.addEventListener('pointerleave', function () { clearTimeout(espera); g.classList.remove('por-abrir'); });
+    });
+  }
+  function vigilarCursor(g) {
+    var l = raiz.querySelector('.lector'), caja = l.querySelector('.lector-caja'), reloj = null;
+    if (!caja) return;
+    function dentro(r, e) { return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; }
+    function fin() { clearTimeout(reloj); document.removeEventListener('pointermove', mover, true); caja.removeEventListener('pointerdown', fin, true); }
+    function mover(e) {
+      if (l.hidden || !caja.isConnected) { fin(); return; }
+      if (dentro(caja.getBoundingClientRect(), e) || dentro(g.getBoundingClientRect(), e)) { clearTimeout(reloj); reloj = null; return; }
+      if (!reloj) reloj = setTimeout(function () { fin(); if (!l.hidden && caja.isConnected) cerrarLector(); }, 450);
+    }
+    document.addEventListener('pointermove', mover, true);
+    caja.addEventListener('pointerdown', fin, true);
+  }
+  /* Celular (Esteban, 30/10/2026: «que cuando esté haciendo scroll estas se vayan revelando a medida que va haciendo scroll, así
+     ya va haciendo el scroll y leyendo a la vez»): en pantalla angosta las tarjetas son una lista que se desplaza; cada una se
+     revela con su texto completo al entrar en pantalla y queda vista cuando su final pasa por la pantalla (leer el 100 %). Es la
+     única excepción, pedida por Esteban, a la regla de no desplazar dentro de la escena. */
+  function giroAlDesplazar(el) {
+    var lista = el.querySelector('.giro-lista');
+    if (!lista) return;
+    if (!('IntersectionObserver' in window)) { lista.classList.add('sin-observador'); return; }
+    var revela = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('revelada'); });
+    }, { root: lista, threshold: 0.15 });
+    var lee = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { var p = e.target.closest('.giro-paso'); if (e.isIntersecting && p && lista.offsetParent) marcar(p.dataset.id); });
+    }, { root: lista, threshold: 1, rootMargin: '0px 0px 8px 0px' });   // el final de 1 px justo en el borde también cuenta
+    lista.querySelectorAll('.giro-paso').forEach(function (p) { revela.observe(p); lee.observe(p.querySelector('.giro-fin')); });
+    /* La flecha «hay más» solo hasta el primer desplazamiento: después taparía el texto que se va leyendo. */
+    function final() {
+      lista.classList.toggle('al-final', lista.scrollTop + lista.clientHeight >= lista.scrollHeight - 6);
+      if (lista.scrollTop > 8) lista.classList.add('desplazada');
+      /* Al llegar al final de la lista, la última tarjeta queda vista: su final ya pasó (QA del 31/10: quedaba 3 / 4 cuando el
+         final de la última se detenía en el borde). */
+      var pasos = lista.querySelectorAll('.giro-paso'), u = pasos[pasos.length - 1];
+      if (lista.classList.contains('al-final') && lista.classList.contains('desplazada') && u && lista.offsetParent) marcar(u.dataset.id);
+    }
+    lista.addEventListener('scroll', final, { passive: true });
+    final();
+  }
 
   B.fichas = function (b, k) {
     return '<div class="fichas" role="tablist">' + b.items.map(function (it, i) {
-      return '<button type="button" role="tab" class="ficha' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' + rot(it.label) + '<span class="ficha-visto">' + visto + '</span></button>';
+      return '<button type="button" role="tab" class="ficha' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's"><span class="ficha-n">' + (i + 1) + '</span>' +
+        '<span class="ficha-arte" aria-hidden="true">' + svgObjeto(it.obj, 30) + '</span>' + rot(it.label) + '<span class="ficha-visto">' + visto + '</span>' +
+        '<span class="ficha-estado ficha-por-leer">Por leer</span><span class="ficha-estado ficha-falta"><i class="fas fa-book-open" aria-hidden="true"></i> Te falta leer</span>' +
+        '<span class="ficha-estado ficha-leida"><i class="fas fa-circle-check" aria-hidden="true"></i> Leída</span></button>';
     }).join('') + '</div><div class="panel-fichas' + (conFigura(escena) ? ' con-figura' : '') + '" role="tabpanel" tabindex="-1">' +
       (conFigura(escena) && IMAGEN[actual] ? figura([]) : '<span class="panel-arte"></span>') +
       '<div class="panel-texto"><p class="panel-vacio">' + mano + ' Elige una ficha para leer su contenido.</p></div></div>';
   };
   B.fichas.activar = function (b, k, el) {
-    var panel = el.querySelector('.panel-fichas'), reajuste = null;
+    var panel = el.querySelector('.panel-fichas'), reajuste = null, primera = true;
     window.addEventListener('resize', function () { if (reajuste) reajuste(); });
     el.querySelectorAll('.ficha').forEach(function (f) {
       f.addEventListener('click', function () {
-        var i = Number(f.dataset.i), it = b.items[i];
+        if (panel.classList.contains('volteando')) return;
+        /* Giro premium (Esteban, 31/10/2026: «aquí también dame un giro premium»): la ficha se hunde y rebota con chispas; el
+           panel gira en 3D como una página (se va la ficha anterior, entra la nueva con un leve rebote y un destello) y después
+           empieza a escribirse. La primera, al cargar, sin vuelta; con «reducir movimiento», directo. */
+        if (quieto || primera || !panel.animate) { primera = false; mostrar(f, true); return; }
+        panel.classList.add('volteando');
+        /* En el marco ancho la ficha elegida se monta un poco sobre el panel (base.css). El panel conserva su giro de golpe (se va
+           la ficha anterior y entra la nueva con un rebote) y, en el golpe, choca contra la ficha montada, que lo detiene: la
+           ficha acusa el golpe y saltan chispas en el punto de contacto (Esteban, 31/10/2026: «que parezca que cuando voltea y
+           llega, la ficha de la sección es la que lo detiene… pero conserva el giro de golpe»). En pantalla angosta, sin choque. */
+        var montada = getComputedStyle(panel.parentNode).display === 'grid';
         el.querySelectorAll('.ficha').forEach(function (o) { o.setAttribute('aria-selected', String(o === f)); });
-        var arte = panel.querySelector('.panel-arte'), grande = panel.classList.contains('con-figura');
-        if (arte) arte.innerHTML = svgObjeto(it.obj, grande ? 150 : 92);
-        panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
-        marcar(f.dataset.id);
-        var pt = panel.querySelector('.panel-texto'), ajustar = grande ? function () { encajarTexto(panel, pt); } : null;
-        reajuste = ajustar;
-        if (!dosificar(pt, ajustar) && ajustar) ajustar();
-        reanimar(panel);
+        f.animate([{ transform: 'scale(1)' }, { transform: 'scale(.94)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' });
+        if (!montada) chispas(f);
+        var ida = panel.animate([{ transform: 'perspective(1100px) rotateY(0deg)', opacity: 1 }, { transform: 'perspective(1100px) rotateY(88deg) scale(.96)', opacity: 0.55 }],
+          { duration: 230, easing: 'cubic-bezier(.5,0,.8,.4)', fill: 'forwards' });
+        ida.onfinish = function () {
+          mostrar(f, false);
+          ida.cancel();
+          var brillo = document.createElement('span');
+          brillo.className = 'panel-destello'; brillo.setAttribute('aria-hidden', 'true'); panel.appendChild(brillo);
+          brillo.animate([{ opacity: 0, backgroundPosition: '120% 0' }, { opacity: 1, offset: 0.3 }, { opacity: 0, backgroundPosition: '-60% 0' }], { duration: 640, easing: 'ease-out' });
+          var dur = 430, vuelta = panel.animate([{ transform: 'perspective(1100px) rotateY(-88deg) scale(.96)', opacity: 0.55 },
+            { transform: 'perspective(1100px) rotateY(7deg) scale(1.01)', opacity: 1, offset: 0.7 }, { transform: 'none', opacity: 1 }],
+            { duration: dur, easing: 'cubic-bezier(.2,.9,.3,1)' });
+          if (montada) {
+            /* Con esta curva el borde del panel alcanza la ficha a un quinto de la vuelta (medido: 80 ms de 430): ahí es el golpe. */
+            var golpe = dur * 0.2, r = f.getBoundingClientRect();
+            f.animate([{ transform: 'none' }, { transform: 'translateX(6px) rotate(-1.4deg) scale(1.04)', offset: 0.28 }, { transform: 'translateX(-2px) rotate(.4deg)', offset: 0.62 }, { transform: 'none' }],
+              { duration: 360, delay: golpe, easing: 'ease-out' });
+            chispas(f, { x: r.right - 3, y: r.top + r.height / 2, n: 12, d: 34, retraso: golpe });   // en el borde de la ficha, donde llega el panel
+          }
+          vuelta.onfinish = vuelta.oncancel = function () { panel.classList.remove('volteando'); setTimeout(function () { brillo.remove(); }, 300); };
+        };
       });
     });
+    function mostrar(f, animar) {
+      var i = Number(f.dataset.i), it = b.items[i];
+      el.querySelectorAll('.ficha').forEach(function (o) { o.setAttribute('aria-selected', String(o === f)); });
+      f.classList.add('abierta');   // abierta y sin leer completa: «Te falta leer» (base.css)
+      var arte = panel.querySelector('.panel-arte'), grande = panel.classList.contains('con-figura');
+      if (arte) arte.innerHTML = svgObjeto(it.obj, grande ? 150 : 92);
+      panel.querySelector('.panel-texto').innerHTML = '<p class="lectura-eyebrow">' + (i + 1) + ' de ' + b.items.length + ' · ' + esc(may(it.label)) + '</p><p class="lectura-texto">' + rico(segs(it.segs)) + '</p>';
+      /* El texto no aparece de golpe: se escribe letra por letra, como en la hoja del giro (Esteban, 31/10/2026). Las letras se
+         envuelven antes de medir y repartir la lectura, para que nada cambie de lugar al escribirse. */
+      var lt = panel.querySelector('.panel-texto .lectura-texto'), letras = quieto ? null : envolverLetras(lt);
+      marcar(f.dataset.id);
+      var pt = panel.querySelector('.panel-texto'), ajustar = grande ? function () { encajarTexto(panel, pt); } : null;
+      reajuste = ajustar;
+      if (!dosificar(pt, ajustar) && ajustar) ajustar();
+      if (animar) reanimar(panel);
+      if (letras) escribirLetras(lt, letras, function () {});
+    }
     el.querySelector('.ficha').click();
   };
 
@@ -1056,7 +1437,7 @@
       '<ol class="eje-lista n' + b.items.length + '">' + b.items.map(function (it, i) {
         return '<li style="--d:' + (i * 0.05) + 's"><button type="button" class="eje-nodo' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '">' +
           '<span class="eje-punto" aria-hidden="true">' + (i + 1) + '</span><span class="eje-rotulo">' + rot(it.label) + '</span>' +
-          '<span class="eje-marca">' + mano + visto + '</span></button></li>';
+          '<span class="eje-marca">' + mano + visto + '</span>' + estado + '</button></li>';
       }).join('') + '</ol></div>' +
       '<div class="eje-dims" aria-hidden="true">' + dims.map(function (d, j) {
         return (j ? '<span class="eje-vs">frente a</span>' : '') + '<p class="eje-dim d' + (j + 1) + '"><span class="eje-dim-arte">' + svgObjeto(j ? 'escudo' : 'documento', 54) + '</span><span>' + esc(may(d)) + '</span></p>';
@@ -1078,6 +1459,9 @@
       if (caja.scrollHeight <= caja.clientHeight + 1) break;
     }
     reanimar(caja);
+    if (desde && desde.classList) desde.classList.add('abierta');
+    var cmp = caja.querySelector('.eje-comparado'), letras = quieto ? null : envolverLetras(cmp);
+    if (letras) escribirVentana(cmp, letras, false);
     l.querySelector('.cerrar').onclick = cerrarLector;
     caja.focus({ preventScroll: true });
   }
@@ -1099,7 +1483,11 @@
   function centroTitulo() { return String(escena.titulo_genially || datos.heading || '').replace(/\s*\(\d+ de \d+\)$/, ''); }
   function abreLector(el, b) {
     el.querySelectorAll('button[data-i]').forEach(function (c) {
-      c.addEventListener('click', function () { var it = b.items[Number(c.dataset.i)]; leer(it.label, segs(it.segs), it.obj, c); marcar(c.dataset.id); });
+      c.addEventListener('click', function () {
+        /* El botón se hunde y rebota, y saltan chispas, mientras la ventana nace de él (Esteban, 31/10/2026: apertura premium). */
+        if (!quieto && c.animate) { c.animate([{ scale: '1' }, { scale: '.95' }, { scale: '1.03' }, { scale: '1' }], { duration: 380, easing: 'ease-out' }); chispas(c, { n: 10, d: 44, retraso: 60 }); }
+        var it = b.items[Number(c.dataset.i)]; leer(it.label, segs(it.segs), it.obj, c); marcar(c.dataset.id);
+      });
     });
   }
 
@@ -1160,7 +1548,7 @@
       circulos += '<button type="button" class="hotspot" data-id="' + id + '" data-i="' + i + '" tabindex="-1" aria-hidden="true" style="left:' + p[0] + '%;top:' + p[1] + '%;--d:' + (0.25 + i * 0.12) + 's">' +
         '<span class="hotspot-n">' + (i + 1) + '</span></button>';
       leyenda += '<li><button type="button" class="punto-leyenda' + refc(it.label) + '" data-id="' + id + '" data-i="' + i + '" style="--d:' + (0.2 + i * 0.08) + 's">' +
-        '<span class="hotspot-n">' + (i + 1) + '</span><span class="leyenda-rotulo">' + rot(it.label) + '</span><span class="hotspot-visto">' + visto + '</span></button></li>';
+        '<span class="hotspot-n">' + (i + 1) + '</span><span class="leyenda-rotulo">' + rot(it.label) + '</span><span class="hotspot-visto">' + visto + '</span>' + estado + '</button></li>';
     });
     return tituloBloque(b, k) + '<div class="puntos-escena"><div class="puntos-marco"><div class="puntos-lienzo" data-r="' + a.r + '"><img src="' + srcImagen(img) + '" alt="">' +
       circulos + '</div></div><ol class="puntos-leyenda">' + leyenda + '</ol></div>';
@@ -1188,7 +1576,7 @@
       lineas += '<path d="M50 50 C ' + (der ? 60 : 40) + ' 50, ' + (der ? 60 : 40) + ' ' + y.toFixed(1) + ', ' + borde + ' ' + y.toFixed(1) + '" style="--d:' + (0.15 + i * 0.1) + 's"/>';
       nodos += '<button type="button" class="rama-mental' + (der ? ' der' : '') + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="left:' + x + '%;top:' + y.toFixed(1) + '%;--d:' + (0.3 + i * 0.1) + 's">' +
         '<span class="rama-arte">' + svgObjeto(it.obj, 40) + '</span><span class="rama-rotulo">' + rot(it.label) + '</span><span class="rama-marca">' + mano + visto + '</span>' +
-        (conTexto ? '<span class="rama-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : 130))) + '</span>' : '') + '</button>';
+        (conTexto ? '<span class="rama-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : 130))) + '</span>' : '') + estado + '</button>';
     });
     return '<div class="mental n' + n + (conTexto ? ' con-extracto' : '') + '"><svg class="mental-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
       '<div class="mental-centro">' + (arteEn('centro') ? '<img class="mental-arte" src="' + srcImagen(escena.arte.img) + '" alt="">' : '<i class="fas fa-lightbulb" aria-hidden="true"></i>') +
@@ -1215,10 +1603,143 @@
       cabeza + '<div class="esquema-hijos">' + b.items.map(function (it, i) {
         return '<button type="button" class="nodo-esquema' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.3 + i * 0.08) + 's">' +
           '<span class="esquema-arte">' + svgObjeto(it.obj, 46) + '</span><span class="esquema-rotulo">' + rot(it.label) + '</span>' +
-          '<span class="esquema-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : n <= 3 ? 170 : 105))) + '</span><span class="esquema-marca">' + mano + ' Ver más' + visto + '</span></button>';
+          '<span class="esquema-extracto">' + esc(may(extracto(segs(it.segs), n <= 2 ? 330 : n <= 3 ? 170 : 105))) + '</span>' +
+          '<span class="esquema-marca"><span class="marca-ver">' + mano + ' Ver más</span><span class="marca-falta"><i class="fas fa-book-open" aria-hidden="true"></i> Te falta leer</span>' +
+          '<span class="marca-leida">' + visto + ' Leída</span></span></button>';
       }).join('') + '</div></div>';
   };
   B.esquema.activar = function (b, k, el) { abreLector(el, b); };
+
+  /* ---------- Familias de la segunda pasada (SRPA, 30/10/2026) ----------
+     Conservan el recorrido de Juan (entrada breve, exploración, texto íntegro en la ventana, visto y avance) y cambian la acción
+     según lo que la ficha permite hacer con su información. Cada rótulo, papel, conexión, requisito o consecuencia es una frase
+     literal de la ficha (el generador lo comprueba) y cada elemento abre su texto completo en el lector. */
+
+  /* Red de instituciones: la norma al centro y, alrededor, las instituciones que la ficha nombra con la referencia que les da
+     («el numeral 5°»). Al leer cada una, su enlace se completa y aparece en la red el papel que la ficha le asigna («la dirección
+     de las investigaciones»): al terminar queda a la vista quién integra el sistema y qué hace cada uno. */
+  B.red = function (b, k) {
+    var n = b.items.length, izq = Math.ceil(n / 2), lineas = '', nodos = '';
+    b.items.forEach(function (it, i) {
+      var der = i >= izq, fila = der ? i - izq : i, filas = der ? n - izq : izq;
+      var y = filas === 1 ? 50 : 22 + 56 * fila / (filas - 1), x = der ? 82 : 18, borde = der ? 66 : 34;
+      lineas += '<path data-id="' + k + '-' + i + '" d="M50 50 C ' + (der ? 58 : 42) + ' 50, ' + (der ? 58 : 42) + ' ' + y.toFixed(1) + ', ' + borde + ' ' + y.toFixed(1) + '"/>';
+      nodos += '<button type="button" class="red-nodo' + (der ? ' der' : '') + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="left:' + x + '%;top:' + y.toFixed(1) + '%;--d:' + (0.2 + i * 0.1) + 's">' +
+        '<span class="red-cab"><span class="red-arte">' + svgObjeto(it.obj, 34) + '</span><span class="red-rotulo">' + rot(it.label) + '</span><span class="red-marca">' + mano + visto + '</span></span>' +
+        (it.norma ? '<span class="red-norma">' + esc(may(it.norma)) + '</span>' : '') +
+        (it.papel ? '<span class="red-papel"><span class="red-pista">Ábrela para completar la red</span><span class="red-revela">' + esc(may(it.papel)) + '</span></span>' : '') + '</button>';
+    });
+    return '<div class="red n' + n + '"><svg class="red-lineas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lineas + '</svg>' +
+      '<div class="red-centro"><i class="fas fa-sitemap" aria-hidden="true"></i><span>' + esc(may(b.centro || centroTitulo())) + '</span></div>' + nodos + '</div>';
+  };
+  B.red.activar = function (b, k, el) { abreLector(el, b); };
+
+  /* Conexiones: a un lado, los conceptos que la ficha nombra, todavía sin unir; al otro, los fragmentos que los relacionan. Al
+     leer cada fragmento aparece la conexión que la ficha establece, con sus palabras («guarda una íntima conexión con»), y se
+     cuentan las conexiones descubiertas. El mapa es una síntesis visual: el texto íntegro está en cada fragmento y cada conexión
+     nueva se anuncia también en texto. */
+  B.conexiones = function (b, k) {
+    var C = b.conceptos || [], E = b.enlaces || [], pos = {};
+    C.forEach(function (c, i) {
+      var a = -Math.PI / 2 + 2 * Math.PI * i / C.length;
+      pos[c.id] = [c.x != null ? c.x : 50 + 33 * Math.cos(a), c.y != null ? c.y : 50 + 34 * Math.sin(a)];
+    });
+    var lineas = E.map(function (e) {
+      var p = pos[e.de], q = pos[e.a];
+      return '<line data-id="' + k + '-' + e.item + '" x1="' + p[0] + '" y1="' + p[1] + '" x2="' + q[0] + '" y2="' + q[1] + '"/>';
+    }).join('');
+    var frases = E.map(function (e) {
+      var p = pos[e.de], q = pos[e.a], m = e.medio || [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+      return '<span class="cx-frase" data-id="' + k + '-' + e.item + '" style="left:' + m[0] + '%;top:' + m[1] + '%">' + esc(may(e.frase)) + '</span>';
+    }).join('');
+    var conceptos = C.map(function (c, i) {
+      var ids = E.filter(function (e) { return e.de === c.id || e.a === c.id; }).map(function (e) { return k + '-' + e.item; });
+      return '<span class="cx-concepto" data-items="' + ids.join(' ') + '" style="left:' + pos[c.id][0] + '%;top:' + pos[c.id][1] + '%;--d:' + (0.15 + i * 0.08) + 's">' + esc(may(c.texto)) + '</span>';
+    }).join('');
+    var fuentes = b.items.map(function (it, i) {
+      var n = E.filter(function (e) { return e.item === i; }).length;
+      return '<button type="button" class="cx-fuente' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.2 + i * 0.08) + 's">' +
+        '<span class="cx-n">' + (i + 1) + '</span><span class="cx-rotulo">' + rot(it.label) + '</span><span class="cx-marca">' + mano + visto + '</span>' +
+        (n ? '<span class="cx-chip"><i class="fas fa-link" aria-hidden="true"></i> ' + (n === 1 ? 'Revela 1 conexión' : 'Revela ' + n + ' conexiones') + '</span>' : '') + '</button>';
+    }).join('');
+    /* En pantalla angosta el mapa no cabe: cada conexión es una fila «concepto · frase · concepto» que se completa al leer. */
+    var T = {};
+    C.forEach(function (c) { T[c.id] = c.texto; });
+    var filas = E.map(function (e) {
+      return '<li class="cx-fila" data-id="' + k + '-' + e.item + '"><span class="cx-c">' + esc(may(T[e.de])) + '</span><span class="cx-f"><span class="cx-f-pista">· · ·</span><span class="cx-f-texto">' +
+        esc(e.frase) + '</span></span><span class="cx-c">' + esc(may(T[e.a])) + '</span></li>';
+    }).join('');
+    return '<div class="conexiones n' + b.items.length + '"><div class="cx-mapa" aria-hidden="true"><svg class="cx-lineas" viewBox="0 0 100 100" preserveAspectRatio="none">' + lineas + '</svg>' +
+      frases + conceptos + '<ul class="cx-lista">' + filas + '</ul><p class="cx-cuenta"></p></div><div class="cx-fuentes">' + fuentes + '</div><p class="sr-only cx-anuncio" aria-live="polite"></p></div>';
+  };
+  B.conexiones.activar = function (b, k, el) {
+    abreLector(el, b);
+    var E = b.enlaces || [], T = {};
+    (b.conceptos || []).forEach(function (c) { T[c.id] = c.texto; });
+    function pintar(id) {
+      el.querySelectorAll('.cx-concepto').forEach(function (c) {
+        if (c.dataset.items.split(' ').some(function (x) { return x && vistos[x]; })) c.classList.add('unido');
+      });
+      var hechas = E.filter(function (e) { return vistos[k + '-' + e.item]; }).length, cuenta = el.querySelector('.cx-cuenta');
+      if (cuenta) cuenta.innerHTML = '<i class="fas fa-link" aria-hidden="true"></i> Conexiones descubiertas: ' + hechas + ' de ' + E.length;
+      if (id) el.querySelector('.cx-anuncio').textContent = E.filter(function (e) { return k + '-' + e.item === id; })
+        .map(function (e) { return may(T[e.de]) + ': ' + e.frase + ' ' + T[e.a]; }).join('. ');
+    }
+    pintar();
+    el.addEventListener('ova-visto', function (ev) { pintar(ev.detail); });
+  };
+
+  /* Requisitos y consecuencia: los escenarios que la ficha distingue (U5-L3: inciso 1 e inciso 3 del artículo 187), cada uno con
+     sus requisitos y «Se cumple» / «No se cumple». Cuando todos los requisitos de un escenario se cumplen aparece, citada, la
+     consecuencia que la ficha le asigna («…tendrá una duración desde 2 hasta 8 años»); cuando cada escenario tiene alguno que no
+     se cumple, la que la ficha prevé para los demás casos. La ficha manda: no se decide nada que ella no diga. Los fragmentos se
+     leen completos desde la lista; en pantalla angosta cada requisito se abrevia por palabras completas («…»). */
+  B.condiciones = function (b, k) {
+    var S = b.escenarios || [], O = b.otro;
+    var lista = b.items.map(function (it, i) {
+      return '<button type="button" class="cond-fuente' + refc(it.label) + '" data-id="' + k + '-' + i + '" data-i="' + i + '" style="--d:' + (0.15 + i * 0.07) + 's">' +
+        '<span class="cond-arte">' + svgObjeto(it.obj, 30) + '</span><span class="cond-rotulo">' + rot(it.label) + '</span><span class="cond-marca">' + mano + visto + '</span></button>';
+    }).join('');
+    var escenarios = S.map(function (s, j) {
+      return '<div class="cond-esc" data-e="' + j + '" style="--d:' + (0.2 + j * 0.1) + 's"><p class="cond-esc-titulo">' + rot(s.titulo) +
+        '<span class="cond-esc-marca"><i class="fas fa-circle-check" aria-hidden="true"></i></span></p><ul class="cond-reqs">' +
+        s.requisitos.map(function (r, q) {
+          var nombre = esc(may(r));
+          return '<li class="cond-req"><span class="cond-req-texto"><span class="cond-largo">' + nombre + '</span><span class="cond-corto" aria-hidden="true">' + esc(may(extracto(r, 34))) + '</span></span>' +
+            '<span class="cond-opciones" role="group" aria-label="' + nombre + '">' +
+            '<button type="button" class="cond-op si" data-e="' + j + '" data-q="' + q + '" data-v="1" aria-pressed="false" aria-label="Se cumple"><span class="cond-op-l">Se cumple</span><span class="cond-op-c" aria-hidden="true">Sí</span></button>' +
+            '<button type="button" class="cond-op no" data-e="' + j + '" data-q="' + q + '" data-v="0" aria-pressed="false" aria-label="No se cumple"><span class="cond-op-l">No se cumple</span><span class="cond-op-c" aria-hidden="true">No</span></button></span></li>';
+        }).join('') + '</ul></div>';
+    }).join('');
+    var cita = function (t) { return '«…' + esc(t) + (/[.;:]$/.test(t) ? '' : '…') + '»'; };
+    var resultado = '<div class="cond-resultado" data-estado="pendiente"><span class="cond-icono"><i class="fas fa-lock" aria-hidden="true"></i></span><div class="cond-res-texto" aria-live="polite">' +
+      '<p class="cond-pista">Marca si se cumple cada requisito para ver la consecuencia que prevé la ficha.</p>' +
+      S.map(function (s, j) { return '<p class="cond-cons" data-e="' + j + '" hidden><span class="cond-cons-de">' + esc(may(s.titulo)) + '</span> ' + cita(s.consecuencia) + '</p>'; }).join('') +
+      (O ? '<p class="cond-cons otro" data-e="otro" hidden>' + cita(O.consecuencia) + '</p>' : '') + '</div></div>';
+    return '<div class="condiciones"><div class="cond-lista">' + lista + '</div><div class="cond-panel"><div class="cond-escenarios n' + S.length + '">' + escenarios + '</div>' + resultado + '</div></div>';
+  };
+  B.condiciones.activar = function (b, k, el) {
+    abreLector(el, b);
+    var S = b.escenarios || [], marca = {}, res = el.querySelector('.cond-resultado');
+    function estado() {
+      var cumple = S.map(function (s, j) { return s.requisitos.every(function (_, q) { return marca[j + '-' + q] === '1'; }); });
+      var falla = S.map(function (s, j) { return s.requisitos.some(function (_, q) { return marca[j + '-' + q] === '0'; }); });
+      var e = cumple.some(Boolean) ? 'si' : falla.every(Boolean) ? 'no' : 'pendiente';
+      res.dataset.estado = e;
+      res.querySelector('.cond-icono i').className = 'fas ' + (e === 'si' ? 'fa-lock-open' : e === 'no' ? 'fa-lock' : 'fa-lock');
+      res.querySelector('.cond-pista').hidden = e !== 'pendiente';
+      res.querySelectorAll('.cond-cons').forEach(function (p) { p.hidden = p.dataset.e === 'otro' ? e !== 'no' : !cumple[Number(p.dataset.e)]; });
+      el.querySelectorAll('.cond-esc').forEach(function (c, j) { c.classList.toggle('cumple', cumple[j]); c.classList.toggle('falla', falla[j]); });
+    }
+    el.querySelectorAll('.cond-op').forEach(function (o) {
+      o.addEventListener('click', function () {
+        marca[o.dataset.e + '-' + o.dataset.q] = o.dataset.v;
+        el.querySelectorAll('.cond-op[data-e="' + o.dataset.e + '"][data-q="' + o.dataset.q + '"]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === o)); });
+        estado(); reanimar(res);
+      });
+    });
+    estado();
+  };
   /* Comparador (contenido que contrasta figuras: «a diferencia de…», «buena fe simple y… exenta de culpa», «frente al
      comiso»): columnas lado a lado; la que se toca se ensancha con su texto completo y las demás se compactan. Usa los
      estilos .columnas del motor. */
@@ -1723,7 +2244,7 @@
     var html = '<div class="contexto n' + n + '">' + (cabeza ? '<p class="bloque-titulo">' + esc(may(cabeza)) + '</p>' : '') +
       (n > 1 ? '<div class="ctx-puntos" role="tablist">' + lista.map(function (it, i) {
         return '<button type="button" role="tab" class="ctx-punto' + refc(it.label) + '" data-id="' + it.id + '" data-i="' + i + '" aria-selected="false" style="--d:' + (i * 0.07) + 's">' +
-          '<span class="ctx-n">' + (i + 1) + '</span><span class="ctx-ico">' + svgObjeto(it.obj, 28) + '</span><span class="ctx-rotulo">' + rot(it.label) + '</span><span class="ctx-visto">' + visto + '</span></button>';
+          '<span class="ctx-n">' + (i + 1) + '</span><span class="ctx-ico">' + svgObjeto(it.obj, 28) + '</span><span class="ctx-rotulo">' + rot(it.label) + '</span><span class="ctx-visto">' + visto + '</span>' + estado + '</button>';
       }).join('') + '</div>' : '') +
       '<article class="ctx-texto" tabindex="-1" aria-live="polite"></article>' + figura(lista.map(function (x) { return x.obj; }), n === 1 ? lista[0].acomp : null) + '</div>';
     return { html: html, lista: lista };
@@ -1734,9 +2255,13 @@
       var it = lista[i]; pos = i;
       botones.forEach(function (o, j) { o.setAttribute('aria-selected', String(j === i)); });
       caja.innerHTML = '<span class="ctx-icono">' + svgObjeto(it.obj, 84) + '</span><p class="lectura-eyebrow">' + (lista.length > 1 ? (i + 1) + ' de ' + lista.length + ' · ' : '') + rot(it.label) + '</p><p class="lectura-texto">' + rico(it.texto) + '</p>';
+      if (botones[i]) botones[i].classList.add('abierta');
+      /* El texto se escribe letra por letra, como en las fichas (Esteban, 31/10/2026: detalles en las 5 unidades). */
+      var lt = caja.querySelector('.lectura-texto'), letras = quieto || !lt ? null : envolverLetras(lt);
       marcar(it.id); /* marcar primero: «Exploración completa» cambia la altura */
       if (!dosificar(caja, function () { encajarTexto(cont, caja); })) encajarTexto(cont, caja);
       reanimar(caja);
+      if (letras) escribirLetras(lt, letras, function () {});
     }
     botones.forEach(function (o) { o.addEventListener('click', function () { abrir(Number(o.dataset.i)); }); });
     abrir(0); /* la escena nunca empieza en blanco */
@@ -1752,11 +2277,14 @@
     total = escena.bloques.reduce(function (a, b) { return a + (b.tipo === 'caso' ? totalCaso(b) : tablaBreve(b) ? 0 : b.items.length) + (b.titulo && b.titulo.length && segs(b.titulo).length > 110 ? 1 : 0); }, 0) + (escena.lead.length ? 1 : 0);
     var ctx = escasa(escena) ? contexto(0) : null;
     var guia = ctx ? (ctx.lista.length > 1 ? 'Elige cada punto y lee su contenido junto a la ilustración.' : 'Lee el contenido junto a la ilustración.') : guias[escena.layout === 'balanza' ? 'fichas' : escena.layout];
+    if (escena.guia) guia = escena.guia;
     /* La tabla breve se ve completa: no hay pestañas que elegir. */
     if (escena.layout === 'tabla' && escena.bloques.length && escena.bloques.every(tablaBreve)) guia = 'Lee la tabla completa.';
     /* Sin nada que explorar (un solo texto a la vista o un caso) no hay barra de avance y la idea clave se ve desde el inicio. */
     var conAvance = total > 0 && !(ctx && ctx.lista.length === 1);
-    var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span>' + guia + '</span></p>' +
+    /* En pantalla angosta las tarjetas que giran se recorren desplazándose (B.giro): su guía lo dice. */
+    var angosta = escena.layout === 'giro' && !escena.guia ? '<span class="guia-angosta">Desliza hacia abajo: cada tarjeta se revela y se lee al pasar.</span>' : '';
+    var cab = '<header class="guia"><p class="guia-texto">' + mano + '<span' + (angosta ? ' class="guia-ancha"' : '') + '>' + guia + '</span>' + angosta + '</p>' +
       (conAvance ? '<div class="avance" role="status"><span class="avance-rotulo">Exploración</span><span class="barra"><i></i></span><output>0 / ' + total + '</output></div>' : '') +
       '<button type="button" class="pantalla-completa" aria-label="Ver en pantalla completa"><i class="fas fa-expand" aria-hidden="true"></i><span>Pantalla completa</span></button></header>';
     var cuerpo = '';
@@ -1774,7 +2302,7 @@
     if (escena.tail.length) cuerpo += '<p class="caja-clave' + (conAvance ? ' tras-completar" hidden' : '"') + '><span class="clave-rotulo"><i class="fas fa-star" aria-hidden="true"></i> ' +
       (conAvance ? 'Idea clave desbloqueada' : 'Idea clave') + '</span>' + rico(segs(escena.tail)) + '</p>';
     raiz.className = 'ova layout-' + (ctx ? 'contexto' : escena.layout === 'balanza' ? 'fichas' : escena.layout) + (embebido ? ' embebido' : '') + (datos.sinHuecos ? ' sin-huecos' : '') +
-      (marcoAncho() ? ' marco-ancho' : '');
+      (marcoAncho() ? ' marco-ancho' : '') + (escena.siluetas ? ' con-siluetas' : '');
     /* Ilustración de la escena en un lugar que varía (Estándares interamericanos; Esteban, 28/10/2026: «a la izquierda, a la
        derecha, en el medio o atrás… de forma embebida para que no sea invasivo»). «arte» = {img, pos}: «izq» o «der», una columna
        propia junto a la mediación; «fondo», la ilustración tenue en la esquina inferior, detrás y sin recibir clics; «centro», en

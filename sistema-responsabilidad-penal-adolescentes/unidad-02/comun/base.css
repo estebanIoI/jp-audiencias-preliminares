@@ -114,7 +114,7 @@ button{cursor:pointer}
 .ficha[aria-selected=true]{background:var(--marino);color:var(--blanco)}
 .ficha-visto{display:none;position:absolute;right:-7px;top:-8px;width:20px;height:20px;border-radius:50%;background:var(--teal);color:var(--blanco);font-size:11px;place-items:center;border:2px solid var(--blanco)}
 .ficha.visto .ficha-visto{display:grid;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
-.panel{flex:1;min-height:0;overflow:auto;padding:13px 17px;border-radius:14px;background:var(--teal);color:var(--blanco);box-shadow:0 8px 20px #30615b33}
+.panel{flex:1;min-height:0;overflow:auto;padding:13px 17px;border-radius:14px;background:var(--teal);color:var(--blanco);box-shadow:0 8px 20px color-mix(in srgb,var(--teal) 20%,transparent)}
 .panel .lectura-texto{color:var(--blanco);font-size:15px;line-height:1.52}.panel .lectura-eyebrow{color:var(--crema)}
 .panel .panel-vacio{color:var(--blanco)}.panel .panel-vacio i{color:var(--crema)}
 .franja{flex:none;width:100%;height:118px}
@@ -276,7 +276,7 @@ button{cursor:pointer}
 .giro:not(.visto) .frente::after{content:"";position:absolute;inset:-4px;border:2px solid var(--oxido);border-radius:18px;animation:latido 2.4s ease-out infinite;pointer-events:none}
 
 /* Fichas con panel */
-.panel-fichas{flex:1;min-height:0;display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-radius:14px;background:var(--teal);color:var(--blanco);box-shadow:0 8px 20px #30615b33;overflow:auto}
+.panel-fichas{flex:1;min-height:0;display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-radius:14px;background:var(--teal);color:var(--blanco);box-shadow:0 8px 20px color-mix(in srgb,var(--teal) 20%,transparent);overflow:auto}
 .panel-arte{flex:none;width:92px;padding:6px;border-radius:14px;background:#ffffff1f}
 .panel-arte:empty{display:none}
 .panel-texto .lectura-texto{color:var(--blanco);font-size:14.6px;line-height:1.5}.panel-texto .lectura-eyebrow{color:var(--crema)}
@@ -1017,3 +1017,355 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
   .marco-ancho .caso-pagina.sin-arte>.caso-hoja>.caso-encaja{grid-column:2;grid-row:1 / -1}
   .marco-ancho .caso-pagina.sin-arte>.caso-hoja::after{content:"\f044";grid-column:1;grid-row:3;align-self:center;justify-self:center;font:900 84px/1 "Font Awesome 6 Free";color:var(--niebla)}
 }
+
+/* ---------- Familias de la segunda pasada (SRPA, 30/10/2026): red, conexiones y condiciones ----------
+   Mismo recorrido de Juan (entrada, exploración, ventana con el texto íntegro, visto y avance); cambia la acción. Colores de la
+   paleta del curso (variables del tema). Sin animación con «reducir movimiento» (regla general del motor). */
+@keyframes revelaFam{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes enlaceFam{from{opacity:.15}to{opacity:1}}
+
+/* Red de instituciones */
+.red{position:relative;flex:1;min-height:0;border-radius:14px;background:radial-gradient(circle at 50% 50%,var(--blanco) 0,var(--blanco) 30%,var(--hielo) 86%)}
+.red-lineas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.red-lineas path{fill:none;stroke:var(--niebla);stroke-width:3;stroke-dasharray:7 7;vector-effect:non-scaling-stroke}
+.red-lineas path.visto{stroke:var(--teal);stroke-width:3.5;stroke-dasharray:none;animation:enlaceFam .7s ease both}
+.red-centro{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:23%;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px;border-radius:18px;background:var(--marino);color:var(--blanco);font:800 15px/1.3 Montserrat,Arial,sans-serif;text-align:center;box-shadow:0 6px 0 var(--teal)}
+.red-centro i{color:var(--coral);font-size:22px}
+.red-nodo{position:absolute;transform:translate(-50%,-50%);width:31%;z-index:2;display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:9px 11px;border:2px solid var(--coral);border-radius:14px;background:var(--blanco);text-align:left;color:var(--marino);box-shadow:0 4px 0 var(--coral);animation:nodoEntra .45s ease both;animation-delay:var(--d)}
+.red-cab{display:flex;align-items:center;gap:8px;font:800 13px/1.25 Montserrat,Arial,sans-serif}
+.red-arte{display:flex;flex:none}.red-arte .obj-svg{width:32px;height:auto}
+.red-rotulo{flex:1}
+.red-marca{display:flex;gap:4px;color:var(--oxido)}.red-marca .fa-circle-check{display:none;color:var(--teal)}
+.red-norma{align-self:flex-start;padding:2px 9px;border-radius:99px;background:var(--crema);color:var(--marino);font:700 11px/1.35 Montserrat,Arial,sans-serif}
+.red-papel{display:block;padding:6px 9px;border-radius:10px;background:var(--hielo);font:400 12.6px/1.42 Roboto,Arial,sans-serif;color:var(--tinta)}
+.red-pista{color:var(--teal);font-style:italic}
+.red-revela{display:none}
+.red-nodo.visto{border-color:var(--teal);box-shadow:0 4px 0 var(--teal)}
+.red-nodo.visto .fa-circle-check{display:inline}.red-nodo.visto .fa-hand-pointer{display:none}
+.red-nodo.visto .red-pista{display:none}
+.red-nodo.visto .red-revela{display:inline;font-weight:500;animation:revelaFam .5s ease both}
+.red-nodo.visto .red-papel{background:var(--niebla)}
+
+/* Conexiones */
+.conexiones{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+.cx-mapa{position:relative;min-height:0;border-radius:14px;border:2px solid var(--niebla);background:radial-gradient(circle at 50% 50%,var(--blanco) 0,var(--blanco) 35%,var(--hielo) 92%)}
+.cx-lineas{position:absolute;inset:0;width:100%;height:100%}
+.cx-lineas line{stroke:var(--niebla);stroke-width:2.5;stroke-dasharray:5 6;vector-effect:non-scaling-stroke}
+.cx-lineas line.visto{stroke:var(--coral);stroke-width:3.5;stroke-dasharray:none;animation:enlaceFam .6s ease both}
+.cx-concepto{position:absolute;transform:translate(-50%,-50%);max-width:30%;z-index:2;padding:7px 11px;border-radius:12px;border:2px solid var(--niebla);background:var(--blanco);color:var(--marino);font:800 12.4px/1.25 Montserrat,Arial,sans-serif;text-align:center;animation:nodoEntra .45s ease both;animation-delay:var(--d)}
+.cx-concepto.unido{border-color:var(--teal);background:var(--marino);color:var(--blanco);box-shadow:0 4px 0 var(--teal)}
+.cx-frase{position:absolute;transform:translate(-50%,-50%);max-width:28%;z-index:3;padding:3px 9px;border-radius:99px;background:var(--crema);color:var(--marino);font:italic 600 11.4px/1.3 Roboto,Arial,sans-serif;text-align:center;visibility:hidden}
+.cx-frase.visto{visibility:visible;animation:revelaFam .5s ease both}
+.cx-cuenta{position:absolute;left:10px;bottom:6px;margin:0;display:flex;gap:6px;align-items:center;font:700 11.5px Montserrat,Arial,sans-serif;color:var(--teal)}
+.cx-lista{display:none}
+.cx-fuentes{display:flex;flex-direction:column;gap:8px;min-height:0}
+.cx-fuente{flex:1;min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:3px 10px;padding:7px 12px;border:2px solid var(--coral);border-radius:14px;background:var(--blanco);box-shadow:0 4px 0 var(--coral);text-align:left;color:var(--marino);animation:subir .45s ease both;animation-delay:var(--d)}
+.cx-fuente:nth-child(even){background:var(--hielo)}
+.cx-n{grid-row:1 / span 2;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--oxido);color:var(--blanco);font:800 12px Montserrat,Arial,sans-serif}
+.cx-rotulo{font:800 13px/1.25 Montserrat,Arial,sans-serif}
+.cx-marca{display:flex;gap:4px;color:var(--oxido)}.cx-marca .fa-circle-check{display:none;color:var(--teal)}
+.cx-chip{grid-column:2 / span 2;justify-self:start;display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:99px;background:var(--crema);color:var(--marino);font:700 10.6px Montserrat,Arial,sans-serif}
+.cx-fuente.visto{border-color:var(--teal);box-shadow:0 4px 0 var(--teal)}.cx-fuente.visto .cx-n{background:var(--teal)}
+.cx-fuente.visto .fa-circle-check{display:inline}.cx-fuente.visto .fa-hand-pointer{display:none}
+
+/* Requisitos y consecuencia */
+.condiciones{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,2fr);gap:12px}
+.cond-lista{display:flex;flex-direction:column;gap:7px;min-height:0}
+.cond-fuente{flex:1;min-height:0;display:flex;align-items:center;gap:9px;padding:6px 11px;border:2px solid var(--coral);border-radius:13px;background:var(--blanco);box-shadow:0 3px 0 var(--coral);text-align:left;color:var(--marino);font:800 12.4px/1.25 Montserrat,Arial,sans-serif;animation:subir .4s ease both;animation-delay:var(--d)}
+.cond-fuente:nth-child(even){background:var(--hielo)}
+.cond-arte{display:flex;flex:none}.cond-arte .obj-svg{width:28px;height:auto}
+.cond-rotulo{flex:1}
+.cond-marca{display:flex;gap:4px;color:var(--oxido)}.cond-marca .fa-circle-check{display:none;color:var(--teal)}
+.cond-fuente.visto{border-color:var(--teal);box-shadow:0 3px 0 var(--teal)}
+.cond-fuente.visto .fa-circle-check{display:inline}.cond-fuente.visto .fa-hand-pointer{display:none}
+.cond-panel{display:flex;flex-direction:column;gap:10px;min-height:0}
+.cond-escenarios{flex:1;min-height:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.cond-esc{display:flex;flex-direction:column;gap:7px;padding:9px 11px;border:2px solid var(--niebla);border-radius:14px;background:var(--hielo);animation:subir .4s ease both;animation-delay:var(--d)}
+.cond-esc-titulo{margin:0;display:flex;gap:8px;align-items:center;justify-content:space-between;font:800 13px/1.25 Montserrat,Arial,sans-serif;color:var(--marino)}
+.cond-esc-marca{display:none;color:var(--teal);font-size:16px}
+.cond-esc.cumple{border-color:var(--teal);background:var(--niebla)}.cond-esc.cumple .cond-esc-marca{display:inline}
+.cond-esc.falla{border-color:var(--crema)}
+.cond-reqs{flex:1;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;justify-content:space-evenly;gap:7px}
+.cond-req{display:flex;flex-direction:column;gap:5px;padding:7px 9px;border-radius:10px;background:var(--blanco)}
+.cond-req-texto{font:500 12.4px/1.4 Roboto,Arial,sans-serif;color:var(--tinta)}
+.cond-corto{display:none}
+.cond-opciones{display:flex;gap:6px}
+.cond-op{padding:4px 11px;border:2px solid var(--teal);border-radius:99px;background:var(--blanco);color:var(--marino);font:700 11.4px/1.2 Montserrat,Arial,sans-serif}
+.cond-op-c{display:none}
+.cond-op.si[aria-pressed="true"]{background:var(--teal);color:var(--blanco)}
+.cond-op.no[aria-pressed="true"]{border-color:var(--oxido);background:var(--oxido);color:var(--blanco)}
+.cond-resultado{flex:none;min-height:100px;display:flex;gap:12px;align-items:center;padding:10px 14px;border:2px solid var(--niebla);border-radius:14px;background:var(--blanco);box-shadow:0 4px 0 var(--niebla)}
+.cond-icono{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--hielo);color:var(--teal);font-size:18px}
+.cond-res-texto{flex:1;display:flex;flex-direction:column;gap:6px}
+.cond-pista{margin:0;font:italic 500 14.5px/1.45 Roboto,Arial,sans-serif;color:var(--teal)}
+.cond-cons{margin:0;font:500 16.5px/1.5 Roboto,Arial,sans-serif;color:var(--tinta);animation:revelaFam .45s ease both}
+.cond-cons-de{display:inline-block;margin-right:6px;padding:1px 9px;border-radius:99px;background:var(--marino);color:var(--blanco);font:700 11px/1.5 Montserrat,Arial,sans-serif;vertical-align:1px}
+.cond-resultado[data-estado="si"]{border-color:var(--teal);box-shadow:0 4px 0 var(--teal)}
+.cond-resultado[data-estado="si"] .cond-icono{background:var(--teal);color:var(--blanco)}
+.cond-resultado[data-estado="no"]{border-color:var(--oxido);box-shadow:0 4px 0 var(--oxido)}
+.cond-resultado[data-estado="no"] .cond-icono{background:var(--oxido);color:var(--blanco)}
+
+@container ova (max-width:600px){
+  .red{display:flex;flex-direction:column;gap:7px;background:none}
+  .red-lineas{display:none}
+  .red-centro,.red-nodo{position:static;transform:none;width:auto}
+  .red-centro{flex-direction:row;justify-content:center;padding:7px 12px;font-size:13px;box-shadow:0 4px 0 var(--teal)}
+  .red-centro i{font-size:16px}
+  .red-nodo{flex:1;min-height:0;gap:3px;padding:6px 10px;animation-name:subir}
+  .red-cab{font-size:12.4px}.red-arte .obj-svg{width:26px}
+  .red-papel{padding:4px 8px;font-size:12px}
+  .conexiones{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:8px}
+  .cx-mapa{display:flex;flex-direction:column;gap:5px;padding:6px 7px}
+  .cx-mapa>.cx-lineas,.cx-mapa>.cx-concepto,.cx-mapa>.cx-frase{display:none}
+  .cx-lista{flex:1;min-height:0;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;justify-content:space-evenly;gap:5px}
+  .cx-fila{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;padding:5px 7px;border:1.5px solid var(--niebla);border-radius:10px;background:var(--blanco)}
+  .cx-c{padding:2px 7px;border-radius:8px;background:var(--hielo);color:var(--marino);font:800 10.8px/1.3 Montserrat,Arial,sans-serif}
+  .cx-f{font:italic 600 11px/1.3 Roboto,Arial,sans-serif;color:var(--marino)}
+  .cx-f-pista{color:var(--teal);letter-spacing:2px}.cx-f-texto{display:none}
+  .cx-fila.visto{border-color:var(--teal)}.cx-fila.visto .cx-c{background:var(--marino);color:var(--blanco)}
+  .cx-fila.visto .cx-f-pista{display:none}.cx-fila.visto .cx-f-texto{display:inline;animation:revelaFam .45s ease both}
+  .cx-cuenta{position:static;font-size:10.5px}
+  /* Fragmentos en dos columnas compactas: con cinco conexiones la lista en una columna se salía del marco (U1-L3-E11). */
+  .cx-fuentes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .cx-fuente{padding:5px 7px;gap:2px 6px}.cx-n{width:22px;height:22px;font-size:11px}.cx-rotulo{font-size:11.2px}
+  .cx-chip{font-size:9.6px;padding:1px 7px}
+  .condiciones{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:8px}
+  .cond-panel{gap:7px}
+  .cond-escenarios{grid-auto-flow:row;gap:6px}
+  .cond-esc{gap:4px;padding:6px 8px}.cond-esc-titulo{font-size:11.6px}
+  .cond-reqs{gap:4px}
+  .cond-req{flex-direction:row;align-items:center;gap:6px;padding:4px 7px}
+  .cond-req-texto{flex:1;font-size:11.4px;line-height:1.3}
+  .cond-largo{display:none}.cond-corto{display:inline}
+  .cond-op{padding:2px 9px;font-size:11px}.cond-op-l{display:none}.cond-op-c{display:inline}
+  .cond-resultado{padding:7px 10px;gap:8px}.cond-icono{width:30px;height:30px;font-size:14px}
+  .cond-pista{font-size:11.6px}.cond-cons{font-size:12.4px;line-height:1.4}
+  .cond-lista{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+  .cond-fuente{flex-direction:column;justify-content:center;gap:2px;padding:4px 5px;font-size:10.6px;text-align:center}
+  .cond-arte .obj-svg{width:20px}
+}
+
+/* ---------- Tarjetas que giran en celular: lista que se revela al desplazarse (Esteban, 30/10/2026) ----------
+   «Que cuando esté haciendo scroll estas se vayan revelando… así ya va haciendo el scroll y leyendo a la vez». Solo en pantalla
+   angosta (@container); en el iframe ancho siguen las tarjetas que giran, que también se abren al pasar el cursor. */
+.giro-lista,.guia-angosta{display:none}
+@keyframes masLatido{50%{transform:translateY(5px)}}
+@container ova (max-width:600px){
+  .guia-ancha{display:none}.guia-angosta{display:inline}
+  .bloque:has(> .giro-lista){flex:1;min-height:0}
+  .bloque > .giros{display:none}
+  .giro-lista{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;margin:0;padding:2px 2px 6px;list-style:none;overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth;border-radius:12px}
+  .giro-paso{flex:none;padding:10px 12px;border:2px solid var(--coral);border-radius:14px;background:var(--blanco);box-shadow:0 4px 0 var(--coral)}
+  .giro-paso:nth-child(even){background:var(--hielo)}
+  .giro-paso-cab{margin:0;display:flex;align-items:center;gap:8px;font:800 13px/1.3 Montserrat,Arial,sans-serif;color:var(--marino)}
+  .giro-paso-cab .giro-n{position:static;flex:none}
+  .giro-paso-cab .giro-arte{display:flex;flex:none}.giro-paso-cab .obj-svg{width:32px;height:auto}
+  .giro-paso-cab .giro-rotulo{flex:1;font-size:13px;color:var(--marino)}
+  .giro-paso-visto{display:none;color:var(--teal);font-size:16px}
+  .giro-paso.visto{border-color:var(--teal);box-shadow:0 4px 0 var(--teal)}.giro-paso.visto .giro-paso-visto{display:inline}
+  .giro-paso-texto{margin-top:8px;font:400 14px/1.6 Roboto,Arial,sans-serif;color:var(--tinta);opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease}
+  .giro-paso-texto p{margin:0 0 .6em}
+  .giro-paso.revelada .giro-paso-texto,.giro-lista.sin-observador .giro-paso-texto{opacity:1;transform:none}
+  .giro-fin{display:block;height:1px}
+  .giro-mas{position:sticky;bottom:2px;align-self:center;flex:none;display:grid;place-items:center;width:30px;height:30px;margin-top:-4px;border-radius:50%;background:var(--marino);color:var(--blanco);font-size:13px;box-shadow:0 3px 0 var(--teal);animation:masLatido 1.6s ease-in-out infinite}
+  .giro-lista.al-final .giro-mas,.giro-lista.desplazada .giro-mas{visibility:hidden}
+}
+
+/* ---------- Lo abierto que aún no se leyó completo late (Esteban, 30/10/2026: «no sabe en qué tarjeta le falta leer») ----------
+   Una tarjeta girada sin terminar no dice «Leído»: dice «Te falta leer» y late, como todo elemento que abrió su ventana y aún no
+   llega a la última parte. Sin latido con «reducir movimiento» (regla general); el rótulo sigue diciéndolo. */
+@keyframes faltaLeer{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--coral) 60%,transparent)}55%{box-shadow:0 0 0 8px color-mix(in srgb,var(--coral) 0%,transparent)}}
+.abierta:not(.visto){animation:faltaLeer 1.5s ease-in-out infinite}
+.giro-falta{display:none;align-items:center;justify-content:center;gap:5px;max-width:100%;padding:3px 9px;border-radius:99px;background:var(--crema);color:var(--marino);font:800 10.5px/1.25 Montserrat,Arial,sans-serif;text-align:center}
+.giro.girada:not(.visto) .giro-leido{display:none}
+.giro.girada:not(.visto) .giro-falta{display:inline-flex}
+
+/* ---------- La tarjeta que se abre pasa a la esquina y su texto sale en una hoja de cuaderno (Esteban, 30/10/2026) ----------
+   «Que la tarjeta gira y se posicione de primera… hacia la esquina… y el cajón de información… como un cuadernito, una hoja de esas
+   antiguas». La tarjeta abierta se traslada a la primera posición; las demás se apartan; la hoja (renglones al alto de la línea,
+   margen, anillas y el icono como sello) queda a su lado sin tapar el giro. Colores: tintes de la paleta del curso. */
+.giros.con-hoja .giro{animation:none}
+.giros .giro{transition:transform .45s cubic-bezier(.2,.9,.3,1),opacity .3s ease}
+.giros.con-hoja .giro.al-frente{transform:translate(var(--dx,0),var(--dy,0));z-index:3}
+.giros.con-hoja .giro:not(.al-frente){opacity:0;transform:scale(.9);pointer-events:none}
+.lector.en-hoja{place-items:center start;padding:10px 16px 10px var(--hoja-izq,30%);background:transparent}
+.lector.en-hoja .lector-caja{--papel:#FFF6F3;width:min(690px,100%);padding:16px 22px 14px 60px;border:0;border-radius:4px 14px 14px 4px;
+  background:linear-gradient(90deg,transparent 0 44px,color-mix(in srgb,var(--coral) 55%,transparent) 44px 46px,transparent 46px),var(--papel);
+  box-shadow:0 1px 0 color-mix(in srgb,var(--marino) 8%,transparent),0 16px 32px color-mix(in srgb,var(--marino) 24%,transparent);transform:rotate(-.4deg)}
+.lector.en-hoja .lector-caja::before{content:"";position:absolute;left:12px;top:16px;bottom:16px;width:20px;pointer-events:none;
+  background:radial-gradient(circle at 10px 10px,transparent 0 3.5px,var(--marino) 4px 5.6px,transparent 6px) 0 0/20px 30px repeat-y;opacity:.8}
+.lector.en-hoja .lectura-texto{background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(1lh - 1px),color-mix(in srgb,var(--marino) 15%,transparent) calc(1lh - 1px),color-mix(in srgb,var(--marino) 15%,transparent) 1lh);line-height:1.6}
+.lector.en-hoja .parr+.parr,.lector.en-hoja .parr+.parr.tramo{margin-top:1lh}
+.lector.en-hoja .lectura-eyebrow{font-size:12.5px;padding-bottom:4px;border-bottom:2px solid color-mix(in srgb,var(--coral) 45%,transparent);margin-bottom:8px}
+.lector.en-hoja .lector-arte{float:right;width:64px;margin:26px 0 6px 14px;padding:6px;border-radius:10px;background:var(--blanco);box-shadow:0 3px 8px color-mix(in srgb,var(--marino) 18%,transparent);transform:rotate(4deg)}
+.lector.en-hoja .cerrar{background:var(--blanco);box-shadow:0 2px 0 color-mix(in srgb,var(--marino) 12%,transparent)}
+/* Pasada la entrada, las tarjetas no repiten su animación al volver de la esquina; las que faltan por leer siguen latiendo. */
+.giros.ya-entraron .giro{animation:none}
+.giros.ya-entraron .giro.abierta:not(.visto){animation:faltaLeer 1.5s ease-in-out infinite}
+.giros.con-hoja .giro.al-frente.abierta:not(.visto){animation:none}
+
+/* ---------- El giro, protagonista (Esteban, 30/10/2026: «que sea épico, premium») ----------
+   Al posar el cursor la tarjeta se eleva y una barra se llena (0,4 s); al girar sale al frente con sombra, la cruza un destello y
+   saltan chispas de la paleta. Sin animación con «reducir movimiento» (regla general). */
+.giros.ya-entraron .giro:not(.girada):hover{transform:translateY(-6px)}
+.giros.ya-entraron .giro:not(.girada):hover .frente{box-shadow:0 14px 26px color-mix(in srgb,var(--marino) 22%,transparent)}
+.giro-carga{position:absolute;left:16px;right:16px;bottom:9px;height:4px;border-radius:3px;background:linear-gradient(90deg,var(--coral),var(--oxido));transform:scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
+.giro.por-abrir .giro-carga{opacity:1;transform:scaleX(1);transition:transform .4s linear}
+.giro.volteando{z-index:6}
+.giro.volteando .cara{box-shadow:0 26px 44px color-mix(in srgb,var(--marino) 38%,transparent)}
+.destello{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+  background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.7) 48%,rgba(255,225,215,.35) 54%,transparent 66%) 120% 0/260% 100% no-repeat}
+@keyframes destelloGiro{0%{opacity:0;background-position:120% 0}25%{opacity:1}100%{opacity:0;background-position:-60% 0}}
+.giro.volteando .destello{animation:destelloGiro .68s ease-out}
+.chispa{position:absolute;z-index:20;width:9px;height:9px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.chispa:nth-of-type(3n){width:6px;height:6px;border-radius:2px}
+.giro.volteando .giro-falta,.giro.volteando .giro-leido{visibility:hidden}
+
+/* Hoja de cuaderno con desplazamiento (Esteban, 30/10/2026: «en el de seguir leyendo, en la vista escritorio, que sea scroll»):
+   cabecera (título, sello y «Cerrar»), texto completo que se desplaza con sus renglones y pie con el avance; la línea del margen
+   se llena con lo leído. */
+.lector.en-hoja .lector-caja{display:flex;flex-direction:column;max-height:100%;overflow:hidden}
+.lector.en-hoja .lector-caja::after{content:"";position:absolute;left:44px;top:0;width:3px;height:var(--leido,0%);background:var(--teal);border-radius:0 0 3px 3px;transition:height .25s ease;pointer-events:none}
+.hoja-cab{flex:none;display:flex;align-items:flex-start;gap:10px}
+.hoja-cab .lectura-eyebrow{flex:1}
+.lector.en-hoja .hoja-cab .lector-arte{float:none;flex:none;width:50px;margin:-8px 0 0;padding:5px}
+.lector.en-hoja .hoja-cab .cerrar{float:none;flex:none;margin:0}
+.hoja-texto{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:8px;background-attachment:local;scrollbar-width:thin;scrollbar-color:var(--coral) transparent}
+.hoja-texto:focus-visible{outline-offset:-2px}
+.hoja-pie{flex:none;margin:6px 0 0;display:flex;gap:6px;align-items:center;font:700 11.5px/1.3 Montserrat,Arial,sans-serif;color:var(--oxido)}
+.lector-caja.hoja-leida .hoja-pie{color:var(--teal)}
+
+/* El texto de la hoja se va escribiendo palabra por palabra, con un cursor que parpadea (Esteban, 30/10/2026). */
+/* Escritura real, letra por letra: cada letra ya ocupa su lugar y solo se hace visible; el cursor se desliza detrás. */
+.hoja-texto,.escribiendo{position:relative}
+.escribiendo .l{opacity:0}
+.escribiendo .l.vista{opacity:1}
+.escribiendo{cursor:pointer}
+.cursor-escritura{position:absolute;left:0;top:0;width:2px;height:1.2em;margin-left:1px;background:var(--coral);border-radius:1px;pointer-events:none;transition:transform 70ms linear;animation:parpadeoCursor 1s steps(2) infinite}
+@keyframes parpadeoCursor{0%,45%{opacity:1}50%,100%{opacity:.15}}
+.hoja-texto.escribiendo{cursor:pointer;scroll-behavior:smooth}
+
+/* ---------- Fichas en rejilla (Esteban, 31/10/2026: «las puedes organizar con grids… para que la lectura sea más interactiva y no
+   aparezca de golpe») ----------
+   En el marco ancho, las fichas son una columna de recuadros a la izquierda (dos columnas si son cinco o más), con número, icono
+   y rótulo; el panel, con su ilustración, queda a la derecha y su texto se escribe letra por letra. */
+.ficha-arte{display:none}
+/* Solo en el iframe ancho: en pantalla angosta (celular) las fichas siguen en su forma angosta. */
+@container ova (min-width:700px){
+.marco-ancho .bloque:has(> .panel-fichas){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.45fr);grid-template-rows:minmax(0,1fr);gap:12px}
+.marco-ancho .bloque:has(> .panel-fichas) > .fichas{display:grid;grid-auto-rows:minmax(0,1fr);gap:8px;min-height:0}
+.marco-ancho .bloque:has(> .panel-fichas) > .fichas:has(> .ficha:nth-child(5)){grid-template-columns:1fr 1fr}
+.marco-ancho .bloque:has(> .panel-fichas) .ficha{display:flex;align-items:center;gap:9px;min-height:0;padding:8px 12px 8px 9px;border-radius:14px;text-align:left;font-size:12.6px;line-height:1.3;box-shadow:0 4px 0 var(--niebla)}
+.marco-ancho .bloque:has(> .panel-fichas) .ficha-n{flex:none;width:28px;height:28px;font-size:13px}
+.marco-ancho .bloque:has(> .panel-fichas) .ficha-arte{display:flex;flex:none}.marco-ancho .bloque:has(> .panel-fichas) .ficha-arte .obj-svg{width:30px;height:auto}
+.marco-ancho .bloque:has(> .panel-fichas) .ficha[aria-selected=true]{box-shadow:0 4px 0 var(--teal),6px 0 0 var(--coral)}
+/* La ficha elegida se monta un poco sobre el panel (Esteban, 31/10/2026: «que la ficha que seleccione se monte solo un poco,
+   para que parezca que cuando voltea y llega, la ficha de la sección es la que lo detiene»). Se usa `translate`, que no choca
+   con la animación de entrada ni con el golpe del giro (app.js). En dos columnas solo se monta la de la columna del panel. */
+.marco-ancho .bloque:has(> .panel-fichas) .ficha{--monta:18px;transition:background .2s,color .2s,translate .32s cubic-bezier(.3,1.5,.5,1),box-shadow .2s}
+.marco-ancho .bloque:has(> .panel-fichas) > .fichas:has(> .ficha:nth-child(5)) > .ficha:nth-child(odd){--monta:0px}
+.marco-ancho .bloque:has(> .panel-fichas) .ficha[aria-selected=true]{z-index:3;translate:var(--monta) 0}
+/* El borde que late de una ficha sin leer sigue la forma del recuadro (antes, un óvalo dentro del rectángulo). */
+.marco-ancho .bloque:has(> .panel-fichas) .ficha:not(.visto)::after{inset:-3px;border-radius:17px;animation:latidoFicha 2s ease-out infinite}
+.marco-ancho .bloque:has(> .panel-fichas) > .panel-fichas{min-height:0;height:100%}
+}
+.escribiendo .caja-letras:not(.con-letra){visibility:hidden}
+.escribiendo .caja-letras:not(.con-letra) .l.vista{visibility:visible}
+/* Terminada una parte que se escribía, «Seguir leyendo» late y un globo indica que hay que tocarlo (Esteban, 31/10/2026). */
+.pag-siguiente{position:relative}
+.pag-siguiente.sigue-aqui{animation:sigueHalo 1.1s ease-in-out infinite}
+@keyframes sigueHalo{0%,100%{box-shadow:0 0 0 2px var(--coral)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--coral) 25%,transparent)}}
+.pag-siguiente.sigue-aqui::after{content:"¡Sigue aquí!";position:absolute;right:0;bottom:calc(100% + 8px);padding:2px 10px;border:2px solid var(--coral);border-radius:99px;background:var(--crema);color:var(--marino);font:800 11px/1.3 Montserrat,Arial,sans-serif;white-space:nowrap;pointer-events:none;animation:globoSigue 1s ease-in-out infinite}
+@keyframes globoSigue{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.pag-siguiente.sigue-aqui{animation:none}.pag-siguiente.sigue-aqui::after{animation:none}}
+
+/* ---------- La tarjeta leída vuelve a su cara, en otro color y con su sello (Esteban, 31/10/2026) ----------
+   «Que después de leído quede de otro color pero con la información que tiene cuando no está volteada, para reforzar lo que dice,
+   y los identificativos de lectura claros»: al cerrar la hoja la tarjeta da la vuelta de regreso; leída, es menta con borde
+   petróleo, sello «✓ Leída» y «Leída · toca para releer»; a medias, «Te falta leer · toca para seguir» y late. */
+.giro-releer,.giro-pendiente,.giro-sello{display:none}
+.giro-releer,.giro-pendiente{align-items:center;justify-content:center;gap:5px;max-width:100%;padding:3px 10px;border-radius:99px;font:800 10.5px/1.25 Montserrat,Arial,sans-serif;text-align:center}
+.giros .giro.visto .frente{background:color-mix(in srgb,var(--niebla) 85%,var(--teal));border-color:var(--teal);box-shadow:0 5px 0 var(--teal)}
+.giro.visto .giro-n{background:var(--teal)}
+.giro.visto .giro-toca,.giro.abierta:not(.visto) .giro-toca{display:none}
+.giro.visto .giro-releer{display:inline-flex;background:var(--teal);color:var(--blanco)}
+.giro.visto .giro-sello{display:inline-flex;align-items:center;gap:5px;position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:99px;background:var(--teal);color:var(--blanco);font:800 11px/1.2 Montserrat,Arial,sans-serif;box-shadow:0 2px 0 var(--marino)}
+.giro.abierta:not(.visto) .giro-pendiente{display:inline-flex;background:var(--crema);color:var(--marino);border:2px solid var(--coral)}
+.giros .giro.abierta:not(.visto) .frente{border-color:var(--coral);box-shadow:0 5px 0 var(--coral)}
+@container ova (max-width:600px){.giro-paso.visto{background:color-mix(in srgb,var(--niebla) 85%,var(--teal))}}
+@container ova (max-width:600px){.giro-lista-arte{flex:none;display:flex;justify-content:center;padding:2px 0}.giro-lista-arte img{height:130px;width:auto;max-width:100%;object-fit:contain}}
+/* Giro premium de las fichas: destello que cruza el panel al girar (Esteban, 31/10/2026). */
+.panel-fichas{position:relative}
+.panel-destello{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;border-radius:inherit;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.38) 48%,rgba(255,225,215,.22) 54%,transparent 66%) 120% 0/260% 100% no-repeat}
+@keyframes latidoFicha{0%{opacity:.85;transform:scale(1)}100%{opacity:0;transform:scale(1.04,1.14)}}
+@media (prefers-reduced-motion:reduce){.marco-ancho .bloque:has(> .panel-fichas) .ficha{transition:background .2s,color .2s}}
+
+/* ---------- Fichas pendientes con aviso escrito (Esteban, 31/10/2026) ----------
+   «Que le diga que le falta leer si no completa las lecturas en la ficha, ya que ahora solo titilan.» La ficha sin abrir dice «Por
+   leer»; la que se abrió y se dejó sin leer completa (con datos.completar, sin pasar todas sus partes) dice «Te falta leer», en
+   crema con borde coral, y su borde late en coral. La ficha que se está leyendo no lleva aviso: la guía es «¡Sigue aquí!». */
+.ficha-estado{display:none;position:absolute;top:-9px;right:14px;z-index:2;align-items:center;gap:4px;padding:1px 8px;border-radius:99px;font:800 10px/1.35 Montserrat,Arial,sans-serif;white-space:nowrap;pointer-events:none}
+.ficha-por-leer{background:var(--blanco);color:var(--marino);border:1.5px solid var(--niebla)}
+.ficha-falta{background:var(--crema);color:var(--marino);border:2px solid var(--coral);animation:faltaFicha 1.6s ease-in-out infinite}
+.ficha:not(.visto):not(.abierta) .ficha-por-leer{display:inline-flex}
+.ficha.abierta:not(.visto):not([aria-selected=true]) .ficha-falta{display:inline-flex}
+.ficha.abierta:not(.visto):not([aria-selected=true])::after{border-color:var(--coral)}
+@keyframes faltaFicha{50%{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){.ficha-falta{animation:none}}
+/* En pantalla angosta las fichas ocupan todo el ancho: el sello de visto entra en la ficha y no queda cortado contra el borde. */
+@container ova (max-width:600px){.fichas .ficha-visto{right:8px}}
+
+/* ---------- Lector común con los detalles del giro y las fichas (Esteban, 31/10/2026: «ajustes de detalle… así a todas las 5
+   unidades»; prioridad 1 del diagnóstico de detalles) ----------
+   Cada botón que abre el lector dice su estado por escrito: «Por leer», «Te falta leer» (abierto sin terminar) o «Leída», y ya
+   leído cambia de color. El esquema conserva el «Ver más» de Juan y cambia ese mismo rótulo. En la lámina, que va sobre la
+   ilustración, solo «Te falta leer». Al cerrar una lectura sin terminarla, un aviso lo dice (avisarFalta de app.js). */
+.punto-leyenda{position:relative}
+.estado-lectura{position:absolute;top:-10px;right:10px;z-index:3;display:flex;pointer-events:none}
+.estado-lectura>span{display:none;align-items:center;gap:4px;padding:1px 8px;border-radius:99px;font:800 10px/1.35 Montserrat,Arial,sans-serif;white-space:nowrap}
+.est-por{background:var(--blanco);color:var(--marino);border:1.5px solid var(--niebla)}
+.est-falta{background:var(--crema);color:var(--marino);border:2px solid var(--coral);animation:faltaFicha 1.6s ease-in-out infinite}
+.est-leida{background:var(--teal);color:var(--blanco);border:1.5px solid var(--teal)}
+:not(.abierta):not(.visto)>.estado-lectura .est-por,.abierta:not(.visto)>.estado-lectura .est-falta,.visto>.estado-lectura .est-leida{display:inline-flex}
+.lamina .punto>.estado-lectura .est-por,.lamina .punto>.estado-lectura .est-leida{display:none!important}
+/* Ya leído: otro color, con la información que tenía (como la tarjeta que gira). */
+.punto-leyenda.visto,.rama-mental.visto,.mapa .nodo.visto,.eje-nodo.visto,.lamina .punto.visto,.nodo-esquema.visto,.nodo-esquema.visto:nth-child(even){background:color-mix(in srgb,var(--niebla) 85%,var(--teal))}
+.fichas .ficha.visto:not([aria-selected=true]){background:color-mix(in srgb,var(--niebla) 85%,var(--teal))}
+.ficha-leida{background:var(--teal);color:var(--blanco);border:1.5px solid var(--teal)}
+.ficha.visto .ficha-leida{display:inline-flex}
+@container ova (max-width:600px){.fichas .ficha-estado{right:34px}}
+/* Esquema: el rótulo «Ver más» pasa a «Te falta leer» y a «Leída»; los nodos pendientes laten. */
+.esquema-marca>span{align-items:center;gap:5px;white-space:nowrap}
+.esquema-marca .marca-ver{display:inline-flex}.esquema-marca .marca-falta,.esquema-marca .marca-leida{display:none}
+.nodo-esquema.abierta:not(.visto) .marca-ver,.nodo-esquema.visto .marca-ver{display:none}
+.nodo-esquema.abierta:not(.visto) .marca-falta,.nodo-esquema.visto .marca-leida{display:inline-flex}
+.nodo-esquema.abierta:not(.visto) .esquema-marca{background:var(--crema);box-shadow:inset 0 0 0 2px var(--coral)}
+.nodo-esquema.visto .esquema-marca{background:var(--teal);color:var(--blanco)}
+.esquema-marca .marca-leida .fa-circle-check{color:var(--blanco)}
+@keyframes latidoNodo{0%,100%{box-shadow:0 5px 0 var(--coral),0 0 0 0 color-mix(in srgb,var(--coral) 0%,transparent)}50%{box-shadow:0 5px 0 var(--coral),0 0 0 5px color-mix(in srgb,var(--coral) 30%,transparent)}}
+.nodo-esquema:not(.visto){animation:subir .45s ease both,latidoNodo 2.2s ease-in-out infinite;animation-delay:var(--d),calc(var(--d) + .6s)}
+.nodo-esquema.abierta:not(.visto){animation:subir .45s ease both,faltaLeer 1.5s ease-in-out infinite;animation-delay:var(--d),0s}
+/* Aviso al cerrar sin terminar: arriba, al centro, sobre la franja de la guía (no tapa personajes ni nada que se pueda tocar). */
+.aviso-falta{position:absolute;left:50%;top:6px;z-index:30;display:flex;align-items:center;gap:8px;max-width:min(88%,560px);margin:0;padding:8px 16px;border:2px solid var(--coral);border-radius:14px;background:var(--crema);color:var(--marino);font:800 13px/1.35 Montserrat,Arial,sans-serif;box-shadow:0 8px 20px color-mix(in srgb,var(--marino) 22%,transparent);pointer-events:none;transform:translateX(-50%);animation:avisoEntra .35s cubic-bezier(.2,.9,.3,1) backwards}
+.aviso-falta i{flex:none;color:var(--coral);font-size:16px}
+.aviso-falta.sale{opacity:0;transform:translate(-50%,-8px);transition:opacity .35s,transform .35s}
+@keyframes avisoEntra{from{opacity:0;transform:translate(-50%,-14px) scale(.96)}to{opacity:1;transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.est-falta{animation:none}.nodo-esquema:not(.visto),.nodo-esquema.abierta:not(.visto){animation:none}}
+/* Contexto con varios puntos: el que se está leyendo no lleva «Te falta leer» (la guía es «¡Sigue aquí!»), como en las fichas. */
+.ctx-punto{position:relative}.ctx-punto[aria-selected=true]>.estado-lectura .est-falta{display:none}
+.ctx-punto.visto:not([aria-selected=true]){background:color-mix(in srgb,var(--niebla) 85%,var(--teal))}
+/* Esquema en pantalla angosta (celular, 390 px): sus hijos pasan a dos columnas; con cuatro columnas de 85 px las palabras se
+   partían («Recono zcamos») y el rótulo de estado no cabía. Las líneas del esquema, trazadas para una fila, no se dibujan. */
+@container ova (max-width:600px){
+  .esquema-lineas{display:none}
+  .esquema-hijos{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:8px}
+  .esquema.n1 .esquema-hijos{grid-template-columns:1fr}
+  .esquema-marca{font-size:10px}
+}
+/* En celular el aviso va al pie, sobre la franja de «Pantalla completa»: arriba tapaba las cabezas de la ilustración. */
+@container ova (max-width:600px){.aviso-falta{top:auto;bottom:6px;font-size:12px;max-width:94%}}
+/* En pantalla angosta las ramas del mapa mental y los nodos del mapa van en la rejilla (position:static): el rótulo de estado se
+   ancla a cada rama, sin moverla (sus left/top en línea se anulan). En el iframe ancho el aviso cabe en una línea. */
+@container ova (max-width:600px){.rama-mental,.mental.con-extracto .rama-mental{position:relative;left:auto!important;top:auto!important}}
+@container ova (min-width:601px){.aviso-falta{max-width:min(92%,780px)}}
