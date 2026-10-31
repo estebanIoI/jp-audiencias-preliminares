@@ -326,7 +326,7 @@
     if (vistos[id]) return;
     vistos[id] = true;
     raiz.querySelectorAll('[data-id="' + id + '"]').forEach(function (b) { b.classList.add('visto'); });
-    if (datos.sinHuecos) { encajarTarjetas(); ajustarExtractos(); }
+    if (datos.sinHuecos) midiendo(function () { encajarTarjetas(); ajustarExtractos(); });
     var n = Object.keys(vistos).length, barra = raiz.querySelector('.barra i');
     if (!barra) return;
     barra.style.width = (100 * n / total) + '%';
@@ -658,6 +658,10 @@
   }
   /* Si la tarjeta aún no cabe (rótulo largo), primero se quita el dibujo de la cara y luego baja la letra del rótulo hasta
      10 px: el rótulo nunca queda cortado. */
+  /* El borde que late en lo no visto (::after con «latido», que escala hasta 1,35) agranda el scrollHeight de su tarjeta según
+     el momento de la animación: medida a destiempo, la tarjeta «no cabía» y perdía su dibujo y su extracto (SRPA U2-L3-E10
+     al cargar en Genially, 30/10/2026). Mientras se mide, ese borde se oculta; la medida y la vuelta ocurren sin pintar. */
+  function midiendo(fn) { raiz.classList.add('midiendo'); try { fn(); } finally { raiz.classList.remove('midiendo'); } }
   function encajarTarjetas() {
     raiz.querySelectorAll('.giro .cara, .nodo-esquema').forEach(function (t) {
       var r = t.querySelector('.giro-rotulo, .esquema-rotulo'), arte = t.querySelector('.giro-arte'), ex = t.querySelector('.giro-extracto, .esquema-extracto');
@@ -1532,7 +1536,7 @@
   document.addEventListener('fullscreenchange', estadoPantalla);
   document.addEventListener('webkitfullscreenchange', estadoPantalla);
   window.addEventListener('resize', zoomPantalla);
-  window.addEventListener('resize', function () { organizarGiros(); encajarTarjetas(); ajustarExtractos(); });
+  window.addEventListener('resize', function () { midiendo(function () { organizarGiros(); encajarTarjetas(); ajustarExtractos(); }); });
 
   /* ---------- Caso de estudio (patrón de Juan, caso1.html; Esteban, 27/10/2026) ----------
      «Aplicación al expediente del curso» como un expediente en páginas: El caso → Su tarea → Su respuesta, con puntos de
@@ -1793,7 +1797,7 @@
     raiz.querySelector('.lector').addEventListener('click', function (e) { if (e.target.classList.contains('lector')) cerrarLector(); });
     raiz.querySelector('.pantalla-completa').addEventListener('click', pantallaCompleta);
     estadoPantalla();
-    organizarGiros(); encajarTarjetas(); ajustarExtractos();
+    midiendo(function () { organizarGiros(); encajarTarjetas(); ajustarExtractos(); });
     /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
        fuente de reserva podía quedar cortado. */
     if (document.fonts) document.fonts.ready.then(function () { window.dispatchEvent(new Event('resize')); });

@@ -183,6 +183,8 @@ button{cursor:pointer}
 @keyframes objEntra{from{opacity:0;transform:translateY(24px) scale(.9)}to{opacity:1}}
 @keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
 @keyframes latido{0%{transform:scale(.9);opacity:.8}100%{transform:scale(1.35);opacity:0}}
+/* Mientras el motor mide (midiendo() de app.js), el borde que late no cuenta: su escala cambiaba el alto medido. */
+.midiendo .punto-n::after,.midiendo .ficha::after,.midiendo .nodo::after,.midiendo .giro .frente::after,.midiendo .intro::after,.midiendo .ctx-punto::after,.midiendo .celda-n::after,.midiendo .hotspot-n::after{display:none!important}
 @keyframes latidoBorde{0%,100%{box-shadow:0 0 0 0 #ad4d3200}50%{box-shadow:0 0 0 6px #ad4d3233}}
 @keyframes mano{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(-8deg)}}
 @keyframes rebote{0%,100%{transform:none}40%{transform:translateY(-8px)}70%{transform:translateY(2px)}}
