@@ -995,7 +995,7 @@ html.en-pantalla-completa .ova{width:767px;height:510px;min-height:0;flex:none}
   .ctx-texto > .ctx-icono{grid-column:1;grid-row:1 / span 4;margin-bottom:0}
   .ctx-texto > :not(.ctx-icono){grid-column:2}
   .caso-tareas:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto,
-  .caso-situacion:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto{font-size:24px;line-height:1.45}
+  .caso-situacion:has(> .caso-tarea:only-of-type) .caso-tarea .lectura-texto{line-height:1.45}
   .caso-tareas:has(> .caso-tarea:only-of-type){display:flex;flex-direction:column;justify-content:center;flex:1}
   .mapa .nodo{width:178px;font-size:14px;padding:10px 8px 12px}.mapa .nodo.nucleo{width:220px;font-size:15px}
   .mapa .nodo .obj-svg{width:64px!important;height:auto}

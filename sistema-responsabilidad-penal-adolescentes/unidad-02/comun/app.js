@@ -1626,6 +1626,12 @@
            movimiento inflaba scrollHeight, de modo que la página perdía su imagen y quedaba un hueco (SRPA U2-L3-E23). */
         encajarTexto(pg, c, raiz.clientWidth >= 900 ? 14 : 0);
         if (c.scrollHeight > c.clientHeight + 1 && !cabe(c, 0)) { quitarRelleno(c); pg.classList.add('sin-arte'); partirBloques(c); }
+        /* Una sola pregunta llena la hoja del marco ancho (la tarjeta se estira): su letra se mide contra el alto de la propia
+           tarjeta, de 25 px hacia abajo, para que nunca quede cortada (SRPA U1-L3-E31). */
+        var sola = c.children.length === 1 && c.querySelector('.caso-tarea');
+        if (sola && raiz.clientWidth >= 900) {
+          for (var fs = 25; fs >= 12.5; fs -= 0.5) { c.style.setProperty('--fs', fs + 'px'); if (sola.scrollHeight <= sola.clientHeight + 1) break; }
+        }
       });
     }
     el.addEventListener('lectura-completa', function () { if (datos.completar) candado(sig, false); });
