@@ -212,7 +212,7 @@
   }
   function quitarRelleno(caja) {
     if (!caja) return;
-    [].slice.call(caja.querySelectorAll('.relleno-arte')).forEach(function (f) { f.remove(); });
+    [].slice.call(caja.querySelectorAll('.relleno-arte')).forEach(function (f) { caja.dataset.tuvoRelleno = '1'; f.remove(); });
     caja.classList.remove('con-relleno');
   }
   /* «columna»: dónde va la ilustración dentro de la caja (el texto de la ruta o de las fichas); por omisión, la caja. */
@@ -223,6 +223,8 @@
     if (disp < 160 || disp - usado < 110) return;
     var dentro = columna || caja, f = document.createElement('figure');
     f.className = 'relleno-arte'; f.setAttribute('aria-hidden', 'true');
+    // Al re-encajar (cambio de tamaño, fuentes) la ilustración que ya estaba no vuelve a entrar con su animación: parpadeaba.
+    if (caja.dataset.tuvoRelleno) f.style.animation = 'none';
     f.innerHTML = '<img src="' + srcImagen(escena.relleno) + '" alt="">';
     dentro.classList.add('con-relleno'); dentro.appendChild(f);
   }
@@ -1801,12 +1803,9 @@
     /* Con las fuentes ya cargadas (Roboto es más ancha que la de reserva), todo se vuelve a encajar: el texto que cabía con la
        fuente de reserva podía quedar cortado. */
     if (document.fonts) document.fonts.ready.then(function () { window.dispatchEvent(new Event('resize')); });
-    /* En una carga en frío (el iframe de Genially) una fuente puede terminar después de fonts.ready, y el visor da al iframe su
-       tamaño final un momento después de cargarlo: las tarjetas se encajaban con medidas provisionales y quedaban sin dibujo ni
-       extracto (SRPA U2-L3-E10 en Genially, 30/10/2026). Se vuelve a encajar al terminar cada carga de fuentes y a los 0,8 y
-       2 s; las funciones de encaje parten siempre de cero, así que repetirlas no acumula cambios. */
+    /* En una carga en frío (el iframe de Genially) una fuente puede terminar después de fonts.ready: se vuelve a encajar al
+       terminar cada carga de fuentes. Las funciones de encaje parten siempre de cero, así que repetirlas no acumula cambios. */
     if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { window.dispatchEvent(new Event('resize')); });
-    [800, 2000].forEach(function (ms) { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, ms); });
     if (!embebido) {
       var nav = raiz.querySelector('.nav-local');
       nav.querySelector('[data-ir="-1"]').disabled = actual === 0;
