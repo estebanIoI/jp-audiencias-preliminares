@@ -95,20 +95,26 @@
       CLAUSULA.lastIndex = 0;
       while ((m = CLAUSULA.exec(o))) cortes.push(m.index + 1);
       while ((m = re.exec(o))) comas.push(m.index + 1);
-      var piezas = [], desde = 0;
+      var piezas = [], desde = 0, sigue = false, espacios = [];
+      re = /\s+/g;
+      while ((m = re.exec(o))) espacios.push(m.index);
       function enVentana(c) { return c - desde >= lim * 0.35 && c - desde <= lim * 1.15; }
       while (o.length - desde > lim * 1.3) {
         /* Primero una coma de cláusula dentro del tramo; si no hay, cualquier coma dentro del tramo. */
-        var dentro = cortes.filter(enVentana);
+        var dentro = cortes.filter(enVentana), enEspacio = false;
         if (!dentro.length) dentro = comas.filter(enVentana);
         /* Sin coma en el tramo, la más cercana con un margen mayor: una oración de 658 caracteres quedaba entera (U1-L3-E07). */
         if (!dentro.length) dentro = comas.filter(function (c) { return c - desde >= lim * 0.25 && c - desde <= lim * 1.3; });
+        /* Último recurso: una oración casi sin comas (U2-L3-E13, 1 132 caracteres a la vista) se reparte en un espacio y la
+           continuación empieza con «…», en minúscula (convención de AGENTS.md). Solo para leer: el texto no cambia. */
+        if (!dentro.length) { dentro = espacios.filter(function (c) { return c - desde >= lim * 0.6 && c - desde <= lim * 1.1; }); enEspacio = true; }
         if (!dentro.length) break;
-        var c = dentro.reduce(function (b, x) { return Math.abs(x - desde - lim * 0.85) < Math.abs(b - desde - lim * 0.85) ? x : b; });
-        piezas.push(o.slice(desde, c).trim()); desde = c;
+        var c = enEspacio ? dentro[dentro.length - 1]
+          : dentro.reduce(function (b, x) { return Math.abs(x - desde - lim * 0.85) < Math.abs(b - desde - lim * 0.85) ? x : b; });
+        piezas.push((sigue ? '…' : '') + o.slice(desde, c).trim()); desde = c; sigue = enEspacio;
       }
-      piezas.push(o.slice(desde).trim());
-      return a.concat(piezas.filter(function (x) { return x; }));
+      piezas.push((sigue ? '…' : '') + o.slice(desde).trim());
+      return a.concat(piezas.filter(function (x) { return x && x !== '…'; }));
     }, []);
     var out = [];
     oraciones.forEach(function (o) {
